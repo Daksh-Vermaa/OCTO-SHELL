@@ -23,4 +23,8 @@ runn: $(TARGET)
 	./$(TARGET)
 
 clean:
-	del /Q $(TARGET)
+	@if [ -f shell.exe ]; then rm -f shell.exe; fi
+	@rm -f src/*.o
+
+
+
