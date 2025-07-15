@@ -35,21 +35,20 @@ It is a **Custom Shell Emulator** built using **C**, **SDL2**, and **SDL_ttf** t
 │   └── FiraCode-Light.ttf
 │
 ├── 📁 include/                  # Header files
-│   ├── config.h                # Constants (font size, window dimensions, etc.)
+│   ├── config.h                # Constants 
 │   ├── gui.h                   # GUI-related declarations
 │   ├── input.h                 # Keyboard input handling
-│   └── shell.h                 # Shell logic and command handling
+│   └── shell.h                 # Shell logic (command handling)
 │
 ├── 📁 src/                      # Source files
-│   ├── gui.c                   # Renders GUI (text, background, cursor)
-│   ├── input.c                 # Handles input buffer and key events
-│   ├── main.c                  # Entry point, SDL init and main loop
-│   └── shell.c                 # Shell logic (command execution, history)
+│   ├── gui.c                   # Renders GUI 
+│   ├── input.c                 # Handles input 
+│   ├── main.c                  # SDL init and main loop
+│   └── shell.c                 # Shell logic 
 │
 ├── 🛠️  Makefile                  # Build instructions using make
 ├── 📄 SDL2_ttf.dll              # SDL2_ttf runtime DLL
 ├── 📄 SDL2.dll                  # SDL2 runtime DLL
-└── 📄 shell.exe                 # Compiled executable
 
 
 ```
