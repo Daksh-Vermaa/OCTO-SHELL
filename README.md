@@ -65,8 +65,9 @@ It is a **Custom Shell Emulator** built using **C**, **SDL2**, and **SDL_ttf** t
 ```
 3. **Run the shell**
 ```bash
-   ./shell.exe
+   mingw32-make runn
 ```
+4. **Clean the
 
 ---
 
