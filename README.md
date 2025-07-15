@@ -59,11 +59,11 @@ It is a **Custom Shell Emulator** built using **C**, **SDL2**, and **SDL_ttf** t
 ```bash
    git clone https://github.com/Daksh-Vermaa/OCTO-SHELL.git
 ```
-2. **Build using Makefile**
+2. **Build shell**
 ```bash
    mingw32-make
 ```
-3. **Run the shell**
+3. ** Build & Run the shell**
 ```bash
    mingw32-make runn
 ```
