@@ -1,0 +1,9 @@
+# Ignore VS Code settings
+.vscode/
+
+
+# Or ignore individual files:
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/cpp_properties.json
+shell.exe
