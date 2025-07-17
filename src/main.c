@@ -65,7 +65,14 @@ int main()
         while (SDL_PollEvent(&e))
         {
             if (e.type == SDL_QUIT)
+            {
                 running = 0;
+            }
+            else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)
+            {
+                running = 0;
+            }
+
             input_handle_event(&e);
         }
 
