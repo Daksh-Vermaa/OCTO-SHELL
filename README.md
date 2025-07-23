@@ -42,7 +42,7 @@ A lightweight, cross-platform shell emulator built with C and SDL2, featuring a 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/octo-shell-emulator.git
+   git clone https://github.com/Daksh-Vermaa/OCTO-SHELL.git
    cd octo-shell-emulator
    ```
 
