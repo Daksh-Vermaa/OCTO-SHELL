@@ -1,34 +1,47 @@
-#include "config.h" 
-#include "input.h" 
-#include "shell.h"  
+#include "input.h"
+#include <string.h>
+#include <SDL.h>
+#include <stdio.h>
+#include "shell.h"
+#include "config.h"
 
-#include <string.h> 
-
-// DEFINING the variables
-char inputBuffer[MAX_INPUT_LENGTH];
-int inputLength = 0;
-
-void input_handle_event(SDL_Event *e)
+void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUFFER_SIZE], int *lineCount)
 {
+    if (!inputBuffer || !output || !lineCount)
+        return;
+
     if (e->type == SDL_TEXTINPUT)
     {
-        if (inputLength + strlen(e->text.text) < MAX_INPUT_LENGTH)
+        size_t currentLen = strlen(inputBuffer);
+        size_t inputLen = strlen(e->text.text);
+        
+        // Check if there's enough space
+        if (currentLen + inputLen < INPUT_BUFFER_SIZE - 1)
         {
             strcat(inputBuffer, e->text.text);
-            inputLength += strlen(e->text.text);
         }
     }
     else if (e->type == SDL_KEYDOWN)
     {
-        if (e->key.keysym.sym == SDLK_BACKSPACE && inputLength > 0)
+        SDL_Keycode key = e->key.keysym.sym;
+
+        if (key == SDLK_BACKSPACE && strlen(inputBuffer) > 0)
         {
-            inputBuffer[--inputLength] = '\0';
+            inputBuffer[strlen(inputBuffer) - 1] = '\0';
         }
-        else if (e->key.keysym.sym == SDLK_RETURN)
+        else if (key == SDLK_RETURN || key == SDLK_KP_ENTER)
         {
-            shell_add_line(inputBuffer);
-            inputBuffer[0] = '\0';
-            inputLength = 0;
+            if (*lineCount < MAX_LINES)
+            {
+                snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "> %s", inputBuffer);
+                (*lineCount)++;
+                
+                // Execute command
+                shell_execute(inputBuffer, output, lineCount);
+                
+                // Clear input buffer
+                inputBuffer[0] = '\0';
+            }
         }
     }
 }

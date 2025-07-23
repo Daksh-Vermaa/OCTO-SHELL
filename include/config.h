@@ -3,8 +3,9 @@
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-#define FONT_SIZE 16
-#define MAX_INPUT_LENGTH 1024
+#define FONT_SIZE 18
+#define FONT_PATH "assets/FiraCode-Light.ttf" 
 #define MAX_LINES 100
+#define INPUT_BUFFER_SIZE 2048
 
 #endif
