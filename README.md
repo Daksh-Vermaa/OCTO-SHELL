@@ -5,7 +5,7 @@ A lightweight, cross-platform shell emulator built with C and SDL2, featuring a 
 ![C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
 ![SDL2](https://img.shields.io/badge/SDL2-2.28.5-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-GPL-green)
 
 ## ✨ Features
 
