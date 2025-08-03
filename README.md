@@ -2,7 +2,7 @@
 
 A modern, lightweight terminal emulator built with SDL2 that brings retro computing vibes to your desktop! Features a sleek interface with customizable fonts, text selection, clipboard integration, and dynamic word wrapping.
 
-[C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
+![C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
 ![SDL2](https://img.shields.io/badge/SDL2-2.28.5-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/License-GPL-green)
