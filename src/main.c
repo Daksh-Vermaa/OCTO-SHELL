@@ -1,8 +1,10 @@
-#include <windows.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
+
+#include <windows.h>
 #include <stdio.h>
 #include <stdbool.h>
+
 #include "config.h"
 #include "gui.h"
 #include "input.h"

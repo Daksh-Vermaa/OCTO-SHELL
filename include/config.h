@@ -6,7 +6,7 @@
 #define WINDOW_HEIGHT 600
 
 // Font settings
-#define FONT_PATH "assets/FiraCode-Light.ttf"
+#define FONT_PATH "assets/Typewriter.ttf" // Default font path
 #define FONT_SIZE 18
 
 // Buffer settings

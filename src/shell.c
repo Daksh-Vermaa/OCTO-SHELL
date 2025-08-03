@@ -1,11 +1,13 @@
-#include "shell.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdbool.h>
+
 #include <SDL.h>
+
 #include "config.h"
+#include "shell.h"
 
 static bool shouldExit = false;
 static bool exitRequested = false;
