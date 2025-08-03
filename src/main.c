@@ -51,7 +51,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (!font)
     {
         printf("Font loading failed: %s\n", TTF_GetError());
-        // Try alternative font paths
+
         font = TTF_OpenFont("assets/FiraCode-Light.ttf", FONT_SIZE);
         if (!font)
         {
@@ -70,18 +70,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     gui_init(renderer, font);
 
-    // Initialize buffers
     char inputBuffer[INPUT_BUFFER_SIZE] = "";
     char output[MAX_LINES][INPUT_BUFFER_SIZE];
     int lineCount = 0;
+    int cursorPos = 0;
+    TextSelection selection = {0, 0, 0, 0, false};
 
-    // Initialize output array
     for (int i = 0; i < MAX_LINES; i++)
     {
         output[i][0] = '\0';
     }
 
-    // Add welcome message
+    // Welcome message
     snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Welcome to OCTO-Shell Emulator!");
     lineCount++;
     snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
@@ -91,10 +91,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     bool running = true;
     SDL_Event e;
 
-    // Enable text input
+    // Start text input
     SDL_StartTextInput();
 
-    while (running)
+    while (running && !shell_should_exit())
     {
         while (SDL_PollEvent(&e))
         {
@@ -108,19 +108,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 {
                     running = false;
                 }
-                // Fall through to handle other key events
-            default:
-                input_handle_event(&e, inputBuffer, output, &lineCount);
-                gui_handle_mouse_event(&e);
+                // Fall through to input handler
+            case SDL_TEXTINPUT:
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+            case SDL_MOUSEMOTION:
+                // Handle input events
+                input_handle_event(&e, inputBuffer, output, &lineCount, &cursorPos, &selection);
+                // Handle mouse events for text selection
+                gui_handle_mouse_event(&e, output, lineCount, &selection);
                 break;
             }
         }
 
-        gui_render(prompt, inputBuffer, output, lineCount);
+        gui_render(prompt, inputBuffer, output, lineCount, cursorPos, &selection);
         SDL_Delay(16); // ~60 FPS
     }
 
-    // Cleanup (moved outside the loop)
+    // Cleanup
     SDL_StopTextInput();
     gui_cleanup();
     TTF_CloseFont(font);

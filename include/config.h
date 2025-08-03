@@ -7,5 +7,6 @@
 #define FONT_PATH "assets/FiraCode-Light.ttf" 
 #define MAX_LINES 100
 #define INPUT_BUFFER_SIZE 2048
+#define CLIPBOARD_SIZE 4096
 
 #endif
