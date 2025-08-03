@@ -6,8 +6,13 @@
 #define WINDOW_HEIGHT 600
 
 // Font settings
-#define FONT_PATH "assets/Typewriter.ttf" // Default font path
+#define FONT_PATH "assets/Typewriter.ttf"
 #define FONT_SIZE 18
+
+// Title font settings
+#define TITLE_FONT_PATH "assets/FiraCode-Bold.ttf"  // Can be different from main font
+#define TITLE_FONT_SIZE 24                          // Larger size for title
+#define TITLE_TEXT "~~~ OCTO-SHELL Emulator v2.0 ~~~"
 
 // Buffer settings
 #define MAX_LINES 100
@@ -23,10 +28,10 @@ typedef struct {
     int startChar;
     int endLine;
     int endChar;
-    int active; 
+    int active; // Changed from bool to int for better compatibility
 } TextSelection;
 
 // Word wrap state
 extern int wordWrapEnabled;
 
-#endif 
+#endif // CONFIG_H

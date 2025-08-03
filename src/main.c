@@ -61,7 +61,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 1;
     }
 
-    // Load font with fallback options
+    // Load main font with fallback options
     TTF_Font *font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
     if (!font)
     {
@@ -104,11 +104,55 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
     else
     {
-      
+        printf("Successfully loaded primary font: %s\n", FONT_PATH);
+    }
+
+    // Load title font (can be different from main font)
+    TTF_Font *titleFont = TTF_OpenFont(TITLE_FONT_PATH, TITLE_FONT_SIZE);
+    if (!titleFont)
+    {
+        printf("Title font loading failed: %s\n", TTF_GetError());
+        printf("Trying title font fallbacks...\n");
+
+        // Try bold variant in assets
+        titleFont = TTF_OpenFont("assets/FiraCode-Bold.ttf", TITLE_FONT_SIZE);
+        if (!titleFont)
+        {
+            // Try regular font but larger
+            titleFont = TTF_OpenFont(FONT_PATH, TITLE_FONT_SIZE);
+            if (!titleFont)
+            {
+                // Try system bold font
+                titleFont = TTF_OpenFont("C:/Windows/Fonts/consolab.ttf", TITLE_FONT_SIZE);
+                if (!titleFont)
+                {
+                    // Use main font as fallback for title
+                    titleFont = font;
+                    printf("Using main font for title.\n");
+                }
+                else
+                {
+                    printf("Using system Consolas Bold for title.\n");
+                }
+            }
+            else
+            {
+                printf("Using main font path with larger size for title.\n");
+            }
+        }
+        else
+        {
+            printf("Loaded title font from assets directory.\n");
+        }
+    }
+    else
+    {
+        printf("Successfully loaded title font: %s\n", TITLE_FONT_PATH);
     }
 
     // Initialize GUI subsystem
     gui_init(renderer, font);
+    gui_set_title_font(titleFont);
 
     // Initialize application state
     char inputBuffer[INPUT_BUFFER_SIZE] = "";
@@ -130,14 +174,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         output[i][0] = '\0';
     }
 
-    // Display welcome messages
-    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "~~~ OCTO-SHELL Emulator v2.0 ~~~");
-    lineCount++;
+    // Display welcome messages (no longer showing title here as it's rendered in GUI)
     snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
     lineCount++;
     snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
     lineCount++;
-    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'Shortcuts' for available Shortcuts.");
+    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'shortcuts' for available shortcuts.");
     lineCount++;
     snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
     lineCount++;
@@ -151,6 +193,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     printf("OCTO-Shell Emulator started successfully.\n");
     printf("Window size: %dx%d\n", WINDOW_WIDTH, WINDOW_HEIGHT);
+    printf("Main font size: %d, Title font size: %d\n", FONT_SIZE, TITLE_FONT_SIZE);
 
     // Main application loop
     while (running && !shell_should_exit())
@@ -205,19 +248,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         SDL_Delay(16);
     }
 
+    printf("Shutting down OCTO-Shell Emulator...\n");
 
     // Cleanup resources in reverse order of creation
     SDL_StopTextInput();
     gui_cleanup();
     
+    if (titleFont && titleFont != font)
+    {
+        TTF_CloseFont(titleFont);
+        printf("Title font resources freed.\n");
+    }
+    
     if (font)
     {
         TTF_CloseFont(font);
+        printf("Main font resources freed.\n");
     }
     
     if (renderer)
     {
         SDL_DestroyRenderer(renderer);
+        printf("Renderer destroyed.\n");
     }
     
     if (window)
@@ -229,6 +281,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     TTF_Quit();
     SDL_Quit();
     
+    printf("OCTO-Shell Emulator terminated successfully.\n");
     
     // Optional: Keep console window open for debugging
     #ifdef _DEBUG

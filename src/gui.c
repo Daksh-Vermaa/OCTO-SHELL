@@ -1,31 +1,31 @@
+#include "config.h"
+#include "gui.h"
+#include <string.h>
+#include <stdbool.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <ctype.h>
 
-#include "config.h"
-#include "gui.h"
-
-#include <string.h>
-#include <stdbool.h>
-
-
 static SDL_Renderer *gRenderer = NULL;
 static TTF_Font *gFont = NULL;
+static TTF_Font *gTitleFont = NULL;
 
 static Uint32 lastCursorToggle = 0;
 static bool cursorVisible = true;
 
-// Cursor manage
+// Cursor management
 static SDL_Cursor *arrowCursor = NULL;
 static SDL_Cursor *ibeamCursor = NULL;
 static bool isIbeamCursorActive = false;
 
-extern int wordWrapEnabled;
+// Word wrap global variable
+extern int wordWrapEnabled; 
 
 void gui_init(SDL_Renderer *renderer, TTF_Font *font)
 {
     gRenderer = renderer;
     gFont = font;
+    gTitleFont = NULL; // Will be set separately
     lastCursorToggle = SDL_GetTicks();
     cursorVisible = true;
     
@@ -33,6 +33,11 @@ void gui_init(SDL_Renderer *renderer, TTF_Font *font)
     arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     ibeamCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
     isIbeamCursorActive = false;
+}
+
+void gui_set_title_font(TTF_Font *titleFont)
+{
+    gTitleFont = titleFont;
 }
 
 void render_text_colored(const char *text, int x, int y, SDL_Color fg, SDL_Color bg)
@@ -52,6 +57,43 @@ void render_text_colored(const char *text, int x, int y, SDL_Color fg, SDL_Color
     }
 
     SDL_Rect dst = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(gRenderer, texture, NULL, &dst);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
+void render_centered_title(const char *title, int y)
+{
+    if (!title || strlen(title) == 0 || !gRenderer)
+        return;
+
+    // Use title font if available, otherwise use regular font
+    TTF_Font *fontToUse = gTitleFont ? gTitleFont : gFont;
+    if (!fontToUse)
+        return;
+
+    // Create colored text surface
+    SDL_Color titleColor = {0, 255, 255, 255}; // Cyan color for title
+    SDL_Color bgColor = {0, 0, 0, 255};        // Black background
+    
+    SDL_Surface *surface = TTF_RenderText_Shaded(fontToUse, title, titleColor, bgColor);
+    if (!surface)
+        return;
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+    if (!texture)
+    {
+        SDL_FreeSurface(surface);
+        return;
+    }
+
+    // Calculate centered position
+    int textWidth = surface->w;
+    int textHeight = surface->h;
+    int centerX = (WINDOW_WIDTH - textWidth) / 2;
+    
+    SDL_Rect dst = {centerX, y, textWidth, textHeight};
     SDL_RenderCopy(gRenderer, texture, NULL, &dst);
 
     SDL_FreeSurface(surface);
@@ -94,7 +136,7 @@ int gui_get_char_width()
 int get_text_width_in_chars(void)
 {
     int charWidth = gui_get_char_width();
-    int availableWidth = WINDOW_WIDTH - 20; 
+    int availableWidth = WINDOW_WIDTH - 20; // Accounting for margins
     return availableWidth / charWidth;
 }
 
@@ -119,6 +161,7 @@ void wrap_text(const char *text, char wrapped[][INPUT_BUFFER_SIZE], int *wrapped
         int lastSpace = -1;
         int lineLength = 0;
 
+        // Find the end of the current line
         while (i < textLen && lineLength < maxWidth)
         {
             if (text[i] == ' ')
@@ -126,6 +169,7 @@ void wrap_text(const char *text, char wrapped[][INPUT_BUFFER_SIZE], int *wrapped
             
             if (text[i] == '\n')
             {
+                // Force line break
                 break;
             }
             
@@ -133,20 +177,25 @@ void wrap_text(const char *text, char wrapped[][INPUT_BUFFER_SIZE], int *wrapped
             i++;
         }
 
+        // Determine where to break the line
         int lineEnd;
         if (i >= textLen || text[i] == '\n')
         {
+            // End of text or explicit newline
             lineEnd = i;
         }
         else if (lineLength >= maxWidth)
         {
+            // Need to wrap
             if (lastSpace != -1 && lastSpace > lineStart)
             {
+                // Break at last space
                 lineEnd = lastSpace;
-                i = lastSpace + 1;
+                i = lastSpace + 1; // Skip the space
             }
             else
             {
+                // No space found, break at max width
                 lineEnd = i;
             }
         }
@@ -165,6 +214,7 @@ void wrap_text(const char *text, char wrapped[][INPUT_BUFFER_SIZE], int *wrapped
 
         currentLine++;
         
+        // Skip newline character if present
         if (i < textLen && text[i] == '\n')
             i++;
     }
@@ -217,7 +267,14 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
     int charWidth = gui_get_char_width();
     int maxWidth = get_text_width_in_chars();
 
-    // Render Output Lines
+    // === Render Centered Title First ===
+    render_centered_title(TITLE_TEXT, y);
+    
+    // Calculate title height to adjust starting position for content
+    int titleHeight = TITLE_FONT_SIZE + 10; // Add some padding
+    y += titleHeight;
+
+    // === 1. Render Output Lines + Highlights ===
     int displayLineCount = 0;
     
     for (int i = 0; i < lineCount && i < MAX_LINES; i++) {
@@ -232,6 +289,7 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
             for (int j = 0; j < wrappedCount; j++) {
                 render_text_colored(wrappedLines[j], 10, y, fg, bg);
                 
+                // Handle selection highlighting for wrapped lines
                 if (selection && selection->active) {
                     int startLine = selection->startLine;
                     int endLine = selection->endLine;
@@ -248,6 +306,7 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
                         int selStart = (i == startLine) ? startChar : 0;
                         int selEnd = (i == endLine) ? endChar : (int)strlen(output[i]);
                         
+                        // Adjust selection for this wrapped line segment
                         int segmentStart = j * maxWidth;
                         int segmentEnd = segmentStart + strlen(wrappedLines[j]);
                         
@@ -268,7 +327,7 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
                 displayLineCount++;
             }
         } else {
-            // non-wrapped rendering
+            // Original non-wrapped rendering
             render_text_colored(output[i], 10, y, fg, bg);
 
             if (selection && selection->active) {
@@ -303,7 +362,7 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
         }
     }
 
-    // Render Input Line
+    // === 2. Render Input Line + Highlight ===
     if (prompt)
         render_text_colored(prompt, 10, y, (SDL_Color){255, 255, 255, 255}, (SDL_Color){0, 0, 0, 255});
 
@@ -338,7 +397,7 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
         }
     }
 
-    // Cursor
+    // === 3. Cursor ===
     int cursorX = 80 + cursorPos * charWidth;
     render_cursor(cursorX, y);
 
@@ -351,9 +410,12 @@ void gui_handle_mouse_event(SDL_Event *e, char output[][INPUT_BUFFER_SIZE], cons
 
     int charWidth = gui_get_char_width();
     int lineHeight = FONT_SIZE + 4;
-    int inputLineY = 10 + lineCount * lineHeight;
+    
+    // Adjust for title offset
+    int titleOffset = TITLE_FONT_SIZE + 10;
+    int inputLineY = 10 + titleOffset + lineCount * lineHeight;
 
-    // Update cursor appearance
+    // Update cursor appearance based on mouse position
     if (e->type == SDL_MOUSEMOTION)
     {
         gui_update_cursor(e->motion.x, e->motion.y, lineCount);
@@ -367,18 +429,23 @@ void gui_handle_mouse_event(SDL_Event *e, char output[][INPUT_BUFFER_SIZE], cons
         mouseX = e->motion.x;
         mouseY = e->motion.y;
     } else {
-        return;
+        return; // Not a mouse event we handle for selection
     }
 
+    // Adjust mouse Y position for title offset
+    int adjustedMouseY = mouseY - titleOffset;
+
+    // Determine clicked line and character
     int clickedLine, clickedChar;
-    if (mouseY >= inputLineY && mouseY < inputLineY + lineHeight) {
-        clickedLine = lineCount;
+    if (adjustedMouseY >= inputLineY - titleOffset && adjustedMouseY < inputLineY - titleOffset + lineHeight) {
+        clickedLine = lineCount; // Input line
         clickedChar = (mouseX - 80) / charWidth;
     } else {
-        clickedLine = (mouseY - 10) / lineHeight;
+        clickedLine = (adjustedMouseY - 10) / lineHeight; // Output line
         clickedChar = (mouseX - 10) / charWidth;
     }
 
+    // Get the correct line length for clamping
     int lineLen = 0;
     if (clickedLine == lineCount) {
         lineLen = (int)strlen(inputBuffer);
@@ -386,24 +453,25 @@ void gui_handle_mouse_event(SDL_Event *e, char output[][INPUT_BUFFER_SIZE], cons
         lineLen = (int)strlen(output[clickedLine]);
     }
     
+    // Clamp character position
     if (clickedChar < 0) clickedChar = 0;
     if (clickedChar > lineLen) clickedChar = lineLen;
 
     if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT)
     {
         if (clickedLine >= 0 && clickedLine <= lineCount) {
-            selection->active = 1; 
+            selection->active = 1; // Set active on down press
             selection->startLine = clickedLine;
             selection->startChar = clickedChar;
             selection->endLine = clickedLine;
             selection->endChar = clickedChar;
         } else {
-            selection->active = 0;
+            selection->active = 0; // Clicked outside text area
         }
     }
     else if (e->type == SDL_MOUSEMOTION && (e->motion.state & SDL_BUTTON_LMASK))
     {
-        if (selection->active) { 
+        if (selection->active) { // Only drag if selection has been started
              if (clickedLine >= 0 && clickedLine <= lineCount) {
                 selection->endLine = clickedLine;
                 selection->endChar = clickedChar;
@@ -411,6 +479,7 @@ void gui_handle_mouse_event(SDL_Event *e, char output[][INPUT_BUFFER_SIZE], cons
         }
     }
 }
+
 
 void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], const char *inputBuffer, int lineCount, TextSelection *selection, char *buffer, int bufferSize)
 {
