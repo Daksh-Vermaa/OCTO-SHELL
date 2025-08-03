@@ -1,6 +1,6 @@
-# OCTO-Shell Emulator ⚡
+# 🐙 OCTO-Shell Emulator v2.0
 
-A lightweight, cross-platform shell emulator built with C and SDL2, featuring a graphical interface with text rendering, mouse selection, and basic shell command functionality.
+A modern, lightweight terminal emulator built with SDL2 that brings retro computing vibes to your desktop! Features a sleek interface with customizable fonts, text selection, clipboard integration, and dynamic word wrapping.
 
 ![C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
 ![SDL2](https://img.shields.io/badge/SDL2-2.28.5-blue)
@@ -9,67 +9,63 @@ A lightweight, cross-platform shell emulator built with C and SDL2, featuring a 
 
 ## ✨ Features
 
-### 🎯 Core Functionality
-- **Interactive Shell Interface**: Command-line interface with prompt and input handling
-- **Real-time Text Rendering**: Uses SDL2_ttf for crisp font rendering
-- **Command Execution**: Built-in command processor with extensible command system
-- **Mouse Selection**: Click and drag to select text output
-- **Scrolling Output**: Automatic line management with configurable maximum lines
-- **Cursor Animation**: Blinking cursor for better user experience
+### 🖥️ **Modern Terminal Experience**
+- **Retro Aesthetic**: Classic terminal look with modern functionality
+- **Smooth Rendering**: Hardware-accelerated graphics with 60 FPS
+- **Resizable Window**: Dynamically adjust to your preferred size
+- **Custom Fonts**: Support for TTF fonts with fallback options
 
-### 🎨 Visual Features
-- **Custom Font Support**: Uses FiraCode-Light for better readability
-- **Responsive UI**: 800x600 window with proper text layout
-- **Text Selection**: Visual feedback for selected text regions
-- **Clean Terminal Design**: Black background with white text for classic terminal feel
+### 📝 **Advanced Text Handling**
+- **Word Wrapping**: Toggle dynamic text wrapping on/off
+- **Text Selection**: Click and drag to select text like a pro
+- **Copy & Paste**: Full clipboard integration with system clipboard
+- **Undo/Redo**: Never lose your work with 50-level undo history
 
-### 🔧 Built-in Commands
-- `help` - Display available commands and usage
-- `echo <text>` - Display the specified text
-- `clear` - Clear the terminal output
-- **Extensible**: Easy to add new commands in the shell module
+### ⌨️ **Rich Input Support**
+- **Cursor Navigation**: Arrow keys, Home, End for precise editing
+- **Keyboard Shortcuts**: Familiar Ctrl+C, Ctrl+V, Ctrl+A, Ctrl+Z shortcuts
+- **Smart Input**: Intelligent text insertion and deletion
 
-## 🚀 Quick Start
+### 🔧 **Built-in Commands**
+- `help` - Display all available commands
+- `echo <text>` - Print text to output
+- `clear` - Clear the terminal screen
+- `wordwrap <on/off>` - Toggle word wrapping
+- `shortcuts` - Show all keyboard shortcuts
+- `exit/quit` - Gracefully close the application
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- **C Compiler**: MinGW-w64 or Visual Studio (Windows)
-- **SDL2 Development Libraries** (v2.28.5 or newer)
-- **SDL2_ttf Development Libraries** (v2.20.2 or newer)
-- **Make**: For building with the provided Makefile
-
+- Windows Operating System
+- SDL2 Development Libraries
+- SDL2_ttf Library
+- C Compiler (GCC, MSVC, or MinGW)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Daksh-Vermaa/OCTO-SHELL.git
-   cd octo-shell-emulator
+   cd Octo-Shell
    ```
 
 2. **Install SDL2 Dependencies**
-   ```bash
-   # Download SDL2 and SDL2_ttf development libraries
-   # Extract to C:/Libs/ or modify Makefile paths accordingly
-   
-   # Directory structure should be:
-   # C:/Libs/SDL2-2.28.5/
-   # C:/Libs/SDL2_ttf-2.20.2/
+   - Download SDL2 and SDL2_ttf from [libsdl.org](https://www.libsdl.org/)
+   - Extract to your development environment
+   - Set up include and library paths
+
+3. **Add Font Files**
+   Create an `assets` folder and add your preferred TTF fonts:
+   ```
+   assets/
+   ├── Typewriter.ttf      (Main font)
+   └── FiraCode-Bold.ttf   (Title font)
    ```
 
-3. **Add Font File**
+4. **Compile the Project**
    ```bash
-   # Create assets directory and add FiraCode-Light.ttf
-   mkdir assets
-   # Copy FiraCode-Light.ttf to assets/ directory
-   ```
-
-4. **Build the Project**
-   ```bash
-   # Using the provided Makefile
-   make
-
-   # Or compile manually
-   x86_64-w64-mingw32-gcc -Wall -I./include -IC:/Libs/SDL2-2.28.5/x86_64-w64-mingw32/include/SDL2 -IC:/Libs/SDL2_ttf-2.20.2/x86_64-w64-mingw32/include/SDL2 -o shell.exe main.c gui.c input.c shell.c -LC:/Libs/SDL2-2.28.5/x86_64-w64-mingw32/lib -LC:/Libs/SDL2_ttf-2.20.2/x86_64-w64-mingw32/lib -lSDL2 -lSDL2_ttf
+   gcc -o octo-shell main.c gui.c input.c shell.c -lSDL2 -lSDL2_ttf
    ```
 
 5. **Run the Emulator**
@@ -77,37 +73,56 @@ A lightweight, cross-platform shell emulator built with C and SDL2, featuring a 
    ./shell.exe
    ```
 
-## 📖 Usage
+## 🎮 Usage
 
 ### Basic Commands
 ```bash
-# Display help information
-> help
-
-# Echo text to output
-> echo Hello, World!
-
-# Clear the terminal
-> clear
+>> help                    # Show all commands
+>> echo Hello World!       # Display text
+>> wordwrap on             # Enable word wrapping
+>> clear                   # Clear screen
+>> exit                    # Close application
 ```
 
 ### Keyboard Shortcuts
-- **Enter**: Execute current command
-- **Backspace**: Delete previous character
-- **Escape**: Exit the application
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl + C` | Copy selected text |
+| `Ctrl + V` | Paste from clipboard |
+| `Ctrl + A` | Select all text |
+| `Ctrl + Z` | Undo last action |
+| `Ctrl + Y` | Redo last action |
+| `Arrow Keys` | Navigate cursor |
+| `Home/End` | Jump to line start/end |
+| `Escape` | Exit application |
 
-### Mouse Interaction
-- **Left Click + Drag**: Select text in the output area
-- **Text Selection**: Visual highlighting of selected regions
+### Mouse Controls
+- **Click and Drag**: Select text
+- **Double Click**: Select word (future feature)
+- **Right Click**: Context menu (future feature)
 
-## 🏗️ Project Structure
+## 🔧 Configuration
+
+Edit `config.h` to customize your experience:
+
+```c
+#define WINDOW_WIDTH 800        // Initial window width
+#define WINDOW_HEIGHT 600       // Initial window height
+#define FONT_SIZE 18           // Main font size
+#define TITLE_FONT_SIZE 24     // Title font size
+#define MAX_LINE_WIDTH 20      // Characters per line for word wrap
+```
+
+## 📁 Project Structure
 
 ```
 
 📁 Octo-Shell/
 ├── 📁 assets/                  # Fonts or other assets
-│   └── FiraCode-Light.ttf
-│
+│   ├── FiraCode-Light.ttf
+│   ├── FiraCdoe-Bold.ttf
+|   └── Typewriter.ttf
+|
 ├── 📁 include/                 # Header files
 │   ├── config.h                # Constants 
 │   ├── gui.h                   # GUI-related declarations
@@ -126,163 +141,73 @@ A lightweight, cross-platform shell emulator built with C and SDL2, featuring a 
 
 ```
 
-## ⚙️ Configuration
-
-### Window Settings
-Modify `config.h` to customize the application:
-
-```c
-#define WINDOW_WIDTH 800        // Window width in pixels
-#define WINDOW_HEIGHT 600       // Window height in pixels
-#define FONT_SIZE 18           // Font size in points
-#define MAX_LINES 100          // Maximum output lines
-#define INPUT_BUFFER_SIZE 2048 // Input buffer size
-```
-
-### Font Configuration
-```c
-#define FONT_PATH "assets/FiraCode-Light.ttf"  // Font file path
-```
-
-## 🔧 Development
-
-### Adding New Commands
-
-1. **Modify `shell.c`** - Add command logic in `shell_execute()`:
-   ```c
-   else if (strcmp(input, "your_command") == 0)
-   {
-       snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Your command output");
-       (*lineCount)++;
-   }
-   ```
-
-2. **Update Help** - Add command description to the help output
-
-### Extending GUI Features
-
-The GUI system is modular and can be extended:
-- **Text Rendering**: Modify `render_text_colored()` in `gui.c`
-- **Mouse Handling**: Extend `gui_handle_mouse_event()`
-- **Visual Effects**: Add new rendering functions
-
-### Custom Input Handling
-
-Input processing can be customized in `input.c`:
-- **Key Bindings**: Add new key combinations in `input_handle_event()`
-- **Text Processing**: Modify input validation and processing
-
 ## 🛠️ Technical Details
 
-### Dependencies
-- **SDL2**: Cross-platform multimedia library
-- **SDL2_ttf**: TrueType font rendering extension
-- **MinGW-w64**: Windows compiler toolchain
-
 ### Architecture
-- **Modular Design**: Separated concerns (GUI, Input, Shell, Config)
-- **Event-Driven**: SDL2 event loop for responsive UI
+- **Modular Design**: Separated concerns for easy maintenance
+- **Event-Driven**: Responsive to user input and system events
 - **Memory Safe**: Proper buffer management and bounds checking
-- **Cross-Platform Ready**: SDL2 base allows easy porting
+- **Cross-Platform Ready**: Built with portability in mind
 
-### Performance
-- **60 FPS Rendering**: Smooth visual updates
-- **Efficient Text Rendering**: Cached font rendering
-- **Low Memory Footprint**: Minimal resource usage
+### Dependencies
+- **SDL2**: Core graphics and window management
+- **SDL2_ttf**: TrueType font rendering
+- **Windows API**: Clipboard integration (Windows-specific)
+
+## 🚧 Roadmap
+
+### Upcoming Features
+- [ ] **Command History**: Navigate through previous commands
+- [ ] **Tab Completion**: Auto-complete commands and file names
+- [ ] **Themes**: Multiple color schemes and visual themes
+- [ ] **File Operations**: Basic file system navigation
+- [ ] **Scripting**: Simple script execution capabilities
+- [ ] **Plugin System**: Extensible command architecture
+
+### Known Issues
+- Word wrap calculation needs refinement for edge cases
+- Font fallback chain could be more robust
+- Mouse selection sometimes glitchy on rapid movements
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how you can help:
+We welcome contributions! Here's how you can help:
 
 1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Make your changes**
-   - Follow existing code style
-   - Add comments for complex logic
-   - Test on Windows platform
-4. **Commit your changes**
-   ```bash
-   git commit -m 'Add some amazing feature'
-   ```
-5. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-6. **Open a Pull Request**
+2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
+4. **Push to the branch** (`git push origin feature/amazing-feature`)
+5. **Open a Pull Request**
 
 ### Development Guidelines
-- **Code Style**: Follow existing C conventions
-- **Memory Management**: Always check for NULL pointers and buffer overflows
-- **Error Handling**: Provide meaningful error messages
-- **Documentation**: Comment complex functions and algorithms
+- Follow existing code style and conventions
+- Add comments for complex logic
+- Test on different screen resolutions
+- Ensure no memory leaks
 
-## 🐛 Troubleshooting
+## 📄 License
 
-### Common Issues
-
-1. **Font Loading Failed**
-   ```
-   Solution: Ensure FiraCode-Light.ttf is in the assets/ directory
-   Alternative: The program will try fallback font paths
-   ```
-
-2. **SDL2 Library Not Found**
-   ```
-   Solution: Check library paths in Makefile match your installation
-   Verify: SDL2 development libraries are properly installed
-   ```
-
-3. **Window Creation Failed**
-   ```
-   Solution: Ensure graphics drivers support SDL2
-   Check: System meets minimum requirements
-   ```
-
-### Debug Mode
-Compile with debug flags for troubleshooting:
-```bash
-make CFLAGS="-Wall -g -DDEBUG"
-```
-
-## 📝 License
-
-This project is licensed under the GPL-3.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🎯 Roadmap
-
-### Planned Features
-- [ ] **Command History**: Up/down arrow navigation
-- [ ] **Tab Completion**: Auto-complete commands and paths
-- [ ] **Configuration File**: External config file support
-- [ ] **Themes**: Multiple color schemes
-- [ ] **File Operations**: Basic file system commands
-- [ ] **Scripting**: Simple script execution support
-
-### Long-term Goals
-- [ ] **Linux/macOS Support**: Cross-platform compilation
-- [ ] **Plugin System**: External command modules
-- [ ] **Network Commands**: Basic networking functionality
-- [ ] **Advanced Text Selection**: Copy/paste support
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **SDL2 Team**: For the excellent multimedia library
-- **FiraCode**: For the beautiful monospace font
-- **MinGW-w64**: For the Windows compilation toolchain
+- **SDL2 Team** - For the amazing graphics library
+- **Font Authors** - For beautiful typefaces
+- **Community Contributors** - For bug reports and suggestions
+- **Retro Computing Enthusiasts** - For inspiration
 
 ## 📞 Support
 
-If you encounter issues or have questions:
+Having issues? 
 
-- **GitHub Issues**: [Create an Issue](https://github.com//Daksh-Vermaa/OCTO-SHELL/issues)
-- **Feature Requests**: Use the issue tracker with "enhancement" label
-- **Bug Reports**: Include system info and steps to reproduce
+- 📧 **Direct Contact**: dakshr117@gmail.com
 
 ---
 
-**Built by <a href="https://github.com/Daksh-Vermaa" target="_blank">Daksh Verma </a>⚡ and C**
+<div align="center">
 
-*A minimalist approach to shell emulation with modern graphics*
+**Made with ❤️ by [<a href="https://github.com/Daksh-Vermaa" target="_blank">Daksh Verma </a>⚡]**
+
+*If you found this project helpful, please consider giving it a ⭐!*
+
+</div>
