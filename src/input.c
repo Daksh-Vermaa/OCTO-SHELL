@@ -1,12 +1,92 @@
-#include "input.h"
 #include <string.h>
 #include <SDL.h>
+
 #include <stdio.h>
 #include <windows.h>
+
 #include "shell.h"
+#include "input.h"
 #include "config.h"
+#include "gui.h"
 
 static char clipboard[CLIPBOARD_SIZE] = "";
+
+// Undo/Redo
+#define MAX_UNDO_STATES 50
+typedef struct {
+    char buffer[INPUT_BUFFER_SIZE];
+    int cursorPos;
+} InputState;
+
+static InputState undoStack[MAX_UNDO_STATES];
+static InputState redoStack[MAX_UNDO_STATES];
+static int undoCount = 0;
+static int redoCount = 0;
+
+void save_input_state(const char *inputBuffer, int cursorPos)
+{
+    if (undoCount < MAX_UNDO_STATES)
+    {
+        strcpy(undoStack[undoCount].buffer, inputBuffer);
+        undoStack[undoCount].cursorPos = cursorPos;
+        undoCount++;
+    }
+    else
+    {
+        for (int i = 0; i < MAX_UNDO_STATES - 1; i++)
+        {
+            undoStack[i] = undoStack[i + 1];
+        }
+        strcpy(undoStack[MAX_UNDO_STATES - 1].buffer, inputBuffer);
+        undoStack[MAX_UNDO_STATES - 1].cursorPos = cursorPos;
+    }
+    redoCount = 0;
+}
+
+void input_undo(char *inputBuffer, int *cursorPos)
+{
+    if (undoCount > 0) 
+    {
+        if (redoCount < MAX_UNDO_STATES)
+        {
+            strcpy(redoStack[redoCount].buffer, inputBuffer);
+            redoStack[redoCount].cursorPos = *cursorPos;
+            redoCount++;
+        }
+        undoCount--;
+        strcpy(inputBuffer, undoStack[undoCount].buffer);
+        *cursorPos = undoStack[undoCount].cursorPos;
+
+        int len = (int)strlen(inputBuffer);
+        if (*cursorPos > len) *cursorPos = len;
+        if (*cursorPos < 0) *cursorPos = 0;
+    }
+}
+
+void input_redo(char *inputBuffer, int *cursorPos)
+{
+void save_input_state(const char *inputBuffer, int cursorPos) 
+  {
+    if (undoCount > 0 && 
+        strcmp(undoStack[undoCount-1].buffer, inputBuffer) == 0 &&
+        undoStack[undoCount-1].cursorPos == cursorPos) {
+        return;
+    }
+
+    if (undoCount < MAX_UNDO_STATES) {
+        strcpy(undoStack[undoCount].buffer, inputBuffer);
+        undoStack[undoCount].cursorPos = cursorPos;
+        undoCount++;
+    } else {
+        for (int i = 0; i < MAX_UNDO_STATES - 1; i++) {
+            undoStack[i] = undoStack[i + 1];
+        }
+        strcpy(undoStack[MAX_UNDO_STATES - 1].buffer, inputBuffer);
+        undoStack[MAX_UNDO_STATES - 1].cursorPos = cursorPos;
+    }
+   redoCount = 0;
+  }
+}
 
 void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUFFER_SIZE], int *lineCount, int *cursorPos, TextSelection *selection)
 {
@@ -15,6 +95,8 @@ void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUF
 
     if (e->type == SDL_TEXTINPUT)
     {
+        save_input_state(inputBuffer, *cursorPos);
+        
         size_t currentLen = strlen(inputBuffer);
         size_t inputLen = strlen(e->text.text);
         
@@ -23,7 +105,6 @@ void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUF
             
         if (currentLen + inputLen < INPUT_BUFFER_SIZE - 1)
         {
-            // Insert text at cursor position
             memmove(inputBuffer + *cursorPos + inputLen, inputBuffer + *cursorPos, currentLen - *cursorPos + 1);
             memcpy(inputBuffer + *cursorPos, e->text.text, inputLen);
             *cursorPos += (int)inputLen;
@@ -34,21 +115,36 @@ void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUF
         SDL_Keycode key = e->key.keysym.sym;
         Uint16 mod = e->key.keysym.mod;
 
-        // Handle Ctrl combinations
         if (mod & KMOD_CTRL)
         {
-            switch (key)
+            if (key == SDLK_a)
             {
-            case SDLK_c: // Copy
-                input_copy_to_clipboard(output, *lineCount, selection);
-                break;
-            case SDLK_v: // Paste
-                input_paste_from_clipboard(inputBuffer, cursorPos);
-                break;
-            case SDLK_a: // Select All
+                // Ctrl+A: Select All
                 input_select_all(output, *lineCount, selection);
-                break;
+                return;
             }
+            else if (key == SDLK_c)
+            {
+                // Ctrl+C: Copy selection
+                input_copy_to_clipboard(output, inputBuffer, *lineCount, selection);
+                return;
+            }
+            else if (key == SDLK_v)
+            {
+                save_input_state(inputBuffer, *cursorPos);
+                input_paste_from_clipboard(inputBuffer, cursorPos);
+                return;
+            }
+            else if (key == SDLK_z)
+            {
+                input_undo(inputBuffer, cursorPos);
+                return;
+            }
+            else if (key == SDLK_y)
+            {
+                input_redo(inputBuffer, cursorPos);
+                return;
+                    }
         }
         else
         {
@@ -57,6 +153,7 @@ void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUF
             case SDLK_BACKSPACE:
                 if (*cursorPos > 0)
                 {
+                    save_input_state(inputBuffer, *cursorPos);
                     size_t len = strlen(inputBuffer);
                     memmove(inputBuffer + *cursorPos - 1, inputBuffer + *cursorPos, len - *cursorPos + 1);
                     (*cursorPos)--;
@@ -65,6 +162,7 @@ void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUF
             case SDLK_DELETE:
                 if (*cursorPos < (int)strlen(inputBuffer))
                 {
+                    save_input_state(inputBuffer, *cursorPos);
                     size_t len = strlen(inputBuffer);
                     memmove(inputBuffer + *cursorPos, inputBuffer + *cursorPos + 1, len - *cursorPos);
                 }
@@ -90,32 +188,36 @@ void input_handle_event(SDL_Event *e, char *inputBuffer, char output[][INPUT_BUF
                     snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "> %s", inputBuffer);
                     (*lineCount)++;
                     
-                    // Execute command
                     shell_execute(inputBuffer, output, lineCount);
                     
-                    // Clear input buffer and reset cursor
                     inputBuffer[0] = '\0';
                     *cursorPos = 0;
+                    
+                    undoCount = 0;
+                    redoCount = 0;
                 }
                 break;
             }
         }
 
-        // Clear selection on most key presses (except copy and select all)
-        if (selection && key != SDLK_c && !(mod & KMOD_CTRL && key == SDLK_a))
+        if (selection && !(mod & KMOD_CTRL))
         {
-            selection->active = false;
+            selection->active = 0;
         }
     }
 }
 
-void input_copy_to_clipboard(char output[][INPUT_BUFFER_SIZE], int lineCount, TextSelection *selection)
+void input_copy_to_clipboard(char output[][INPUT_BUFFER_SIZE], const char *inputBuffer, int lineCount, TextSelection *selection)
+
 {
     if (!selection || !selection->active)
+    {
+        printf("Copy failed: No active selection\n");
         return;
+    }
 
     char selectedText[CLIPBOARD_SIZE];
-    gui_get_selected_text(output, lineCount, selection, selectedText, CLIPBOARD_SIZE);
+    gui_get_selected_text(output, inputBuffer, lineCount, selection, selectedText, CLIPBOARD_SIZE);
     
     if (strlen(selectedText) > 0)
     {
@@ -138,9 +240,21 @@ void input_copy_to_clipboard(char output[][INPUT_BUFFER_SIZE], int lineCount, Te
                     GlobalUnlock(hClipboardData);
                     SetClipboardData(CF_TEXT, hClipboardData);
                 }
+                else
+                {
+                    GlobalFree(hClipboardData);
+                }
             }
             CloseClipboard();
         }
+        else
+        {
+            printf("Failed to open Windows clipboard\n");
+        }
+    }
+    else
+    {
+        printf("Copy failed: No text selected\n");
     }
 }
 
@@ -148,7 +262,6 @@ void input_paste_from_clipboard(char *inputBuffer, int *cursorPos)
 {
     char pasteText[CLIPBOARD_SIZE] = "";
     
-    // Try to get from Windows clipboard first
     if (OpenClipboard(NULL))
     {
         HANDLE hClipboardData = GetClipboardData(CF_TEXT);
@@ -165,36 +278,30 @@ void input_paste_from_clipboard(char *inputBuffer, int *cursorPos)
         CloseClipboard();
     }
     
-    // Fallback to internal clipboard
     if (strlen(pasteText) == 0)
     {
         strcpy(pasteText, clipboard);
     }
 
-    // Insert pasted text at cursor position
     if (strlen(pasteText) > 0)
     {
         size_t currentLen = strlen(inputBuffer);
         size_t pasteLen = strlen(pasteText);
         
-        // Validate cursor position
         if (*cursorPos < 0 || *cursorPos > (int)currentLen)
             *cursorPos = (int)currentLen;
             
-        // Remove newlines from pasted text for single-line input
         for (size_t i = 0; pasteText[i]; i++)
         {
             if (pasteText[i] == '\n' || pasteText[i] == '\r')
                 pasteText[i] = ' ';
         }
         
-        // Limit paste length to available space
         if (pasteLen > INPUT_BUFFER_SIZE - currentLen - 1)
             pasteLen = INPUT_BUFFER_SIZE - currentLen - 1;
         
         if (currentLen + pasteLen < INPUT_BUFFER_SIZE - 1)
         {
-            // Move existing text to make room
             memmove(inputBuffer + *cursorPos + pasteLen, inputBuffer + *cursorPos, currentLen - *cursorPos + 1);
             // Insert pasted text
             memcpy(inputBuffer + *cursorPos, pasteText, pasteLen);
@@ -208,9 +315,10 @@ void input_select_all(char output[][INPUT_BUFFER_SIZE], int lineCount, TextSelec
     if (!selection || lineCount == 0)
         return;
 
-    selection->active = true;
+    selection->active = 1;
     selection->startLine = 0;
     selection->startChar = 0;
     selection->endLine = lineCount - 1;
     selection->endChar = (int)strlen(output[lineCount - 1]);
+    
 }

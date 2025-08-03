@@ -1,9 +1,13 @@
-#include "config.h"
-#include "gui.h"
-#include <string.h>
-#include <stdbool.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <ctype.h>
+
+#include "config.h"
+#include "gui.h"
+
+#include <string.h>
+#include <stdbool.h>
+
 
 static SDL_Renderer *gRenderer = NULL;
 static TTF_Font *gFont = NULL;
@@ -11,12 +15,24 @@ static TTF_Font *gFont = NULL;
 static Uint32 lastCursorToggle = 0;
 static bool cursorVisible = true;
 
+// Cursor manage
+static SDL_Cursor *arrowCursor = NULL;
+static SDL_Cursor *ibeamCursor = NULL;
+static bool isIbeamCursorActive = false;
+
+extern int wordWrapEnabled;
+
 void gui_init(SDL_Renderer *renderer, TTF_Font *font)
 {
     gRenderer = renderer;
     gFont = font;
     lastCursorToggle = SDL_GetTicks();
     cursorVisible = true;
+    
+    // Initialize cursors
+    arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    ibeamCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+    isIbeamCursorActive = false;
 }
 
 void render_text_colored(const char *text, int x, int y, SDL_Color fg, SDL_Color bg)
@@ -44,9 +60,12 @@ void render_text_colored(const char *text, int x, int y, SDL_Color fg, SDL_Color
 
 void render_selection_highlight(int x, int y, int width, int height)
 {
-    SDL_Rect selectionRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(gRenderer, 100, 150, 255, 128);
+    if (!gRenderer || width <= 0 || height <= 0)
+        return;
+        
+     SDL_Rect selectionRect = {x, y, width, height};
     SDL_SetRenderDrawBlendMode(gRenderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(gRenderer, 0, 120, 215, 150); // Blue with alpha
     SDL_RenderFillRect(gRenderer, &selectionRect);
     SDL_SetRenderDrawBlendMode(gRenderer, SDL_BLENDMODE_NONE);
 }
@@ -72,170 +91,328 @@ int gui_get_char_width()
     return w;
 }
 
+int get_text_width_in_chars(void)
+{
+    int charWidth = gui_get_char_width();
+    int availableWidth = WINDOW_WIDTH - 20; 
+    return availableWidth / charWidth;
+}
+
+void wrap_text(const char *text, char wrapped[][INPUT_BUFFER_SIZE], int *wrappedLineCount, int maxWidth)
+{
+    if (!text || !wrapped || !wrappedLineCount)
+        return;
+
+    *wrappedLineCount = 0;
+    int textLen = strlen(text);
+    
+    if (textLen == 0)
+        return;
+
+    int currentLine = 0;
+    int currentPos = 0;
+    int i = 0;
+
+    while (i < textLen && currentLine < MAX_LINES)
+    {
+        int lineStart = i;
+        int lastSpace = -1;
+        int lineLength = 0;
+
+        while (i < textLen && lineLength < maxWidth)
+        {
+            if (text[i] == ' ')
+                lastSpace = i;
+            
+            if (text[i] == '\n')
+            {
+                break;
+            }
+            
+            lineLength++;
+            i++;
+        }
+
+        int lineEnd;
+        if (i >= textLen || text[i] == '\n')
+        {
+            lineEnd = i;
+        }
+        else if (lineLength >= maxWidth)
+        {
+            if (lastSpace != -1 && lastSpace > lineStart)
+            {
+                lineEnd = lastSpace;
+                i = lastSpace + 1;
+            }
+            else
+            {
+                lineEnd = i;
+            }
+        }
+        else
+        {
+            lineEnd = i;
+        }
+
+        // Copy the line
+        int copyLength = lineEnd - lineStart;
+        if (copyLength > INPUT_BUFFER_SIZE - 1)
+            copyLength = INPUT_BUFFER_SIZE - 1;
+
+        strncpy(wrapped[currentLine], text + lineStart, copyLength);
+        wrapped[currentLine][copyLength] = '\0';
+
+        currentLine++;
+        
+        if (i < textLen && text[i] == '\n')
+            i++;
+    }
+
+    *wrappedLineCount = currentLine;
+}
+
+bool gui_is_point_in_text_area(int mouseX, int mouseY, int lineCount)
+{
+    int textAreaLeft = 10;
+    int textAreaRight = WINDOW_WIDTH - 10;
+    int textAreaTop = 10;
+    int lineHeight = FONT_SIZE + 4;
+    int textAreaBottom = 10 + (lineCount + 1) * lineHeight;
+    
+    return (mouseX >= textAreaLeft && mouseX <= textAreaRight && 
+            mouseY >= textAreaTop && mouseY <= textAreaBottom);
+}
+
+void gui_update_cursor(int mouseX, int mouseY, int lineCount)
+{
+    bool shouldShowIbeam = gui_is_point_in_text_area(mouseX, mouseY, lineCount);
+    
+    if (shouldShowIbeam && !isIbeamCursorActive)
+    {
+        SDL_SetCursor(ibeamCursor);
+        isIbeamCursorActive = true;
+    }
+    else if (!shouldShowIbeam && isIbeamCursorActive)
+    {
+        SDL_SetCursor(arrowCursor);
+        isIbeamCursorActive = false;
+    }
+}
+
 void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT_BUFFER_SIZE], int lineCount, int cursorPos, TextSelection *selection)
 {
-    if (!gRenderer || !gFont)
-        return;
+    if (!gRenderer || !gFont) return;
 
     SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
     SDL_RenderClear(gRenderer);
 
     Uint32 now = SDL_GetTicks();
-    if (now - lastCursorToggle >= 500)
-    {
+    if (now - lastCursorToggle >= 500) {
         cursorVisible = !cursorVisible;
         lastCursorToggle = now;
     }
 
     int y = 10;
     int charWidth = gui_get_char_width();
+    int maxWidth = get_text_width_in_chars();
 
-    // Render output lines with selection highlighting
-    for (int i = 0; i < lineCount && i < MAX_LINES; i++)
-    {
+    // Render Output Lines
+    int displayLineCount = 0;
+    
+    for (int i = 0; i < lineCount && i < MAX_LINES; i++) {
         SDL_Color fg = {255, 255, 255, 255};
         SDL_Color bg = {0, 0, 0, 255};
-        
-        // Check if this line is selected
-        if (selection && selection->active)
-        {
-            bool lineSelected = false;
-            int selStart = 0, selEnd = 0;
 
-            if (i >= selection->startLine && i <= selection->endLine)
-            {
-                lineSelected = true;
-                if (i == selection->startLine && i == selection->endLine)
-                {
-                    // Selection within same line
-                    selStart = selection->startChar;
-                    selEnd = selection->endChar;
+        if (wordWrapEnabled) {
+            char wrappedLines[MAX_LINES][INPUT_BUFFER_SIZE];
+            int wrappedCount = 0;
+            wrap_text(output[i], wrappedLines, &wrappedCount, maxWidth);
+            
+            for (int j = 0; j < wrappedCount; j++) {
+                render_text_colored(wrappedLines[j], 10, y, fg, bg);
+                
+                if (selection && selection->active) {
+                    int startLine = selection->startLine;
+                    int endLine = selection->endLine;
+                    int startChar = selection->startChar;
+                    int endChar = selection->endChar;
+
+                    if (startLine > endLine || (startLine == endLine && startChar > endChar)) {
+                        int tmpLine = startLine, tmpChar = startChar;
+                        startLine = endLine; startChar = endChar;
+                        endLine = tmpLine; endChar = tmpChar;
+                    }
+
+                    if (i >= startLine && i <= endLine) {
+                        int selStart = (i == startLine) ? startChar : 0;
+                        int selEnd = (i == endLine) ? endChar : (int)strlen(output[i]);
+                        
+                        int segmentStart = j * maxWidth;
+                        int segmentEnd = segmentStart + strlen(wrappedLines[j]);
+                        
+                        if (selStart < segmentEnd && selEnd > segmentStart) {
+                            int highlightStart = (selStart > segmentStart) ? selStart - segmentStart : 0;
+                            int highlightEnd = (selEnd < segmentEnd) ? selEnd - segmentStart : strlen(wrappedLines[j]);
+                            
+                            if (highlightStart < highlightEnd) {
+                                int highlightX = 10 + highlightStart * charWidth;
+                                int highlightWidth = (highlightEnd - highlightStart) * charWidth;
+                                render_selection_highlight(highlightX, y, highlightWidth, FONT_SIZE);
+                            }
+                        }
+                    }
                 }
-                else if (i == selection->startLine)
-                {
-                    // First line of multi-line selection
-                    selStart = selection->startChar;
-                    selEnd = (int)strlen(output[i]);
+                
+                y += FONT_SIZE + 4;
+                displayLineCount++;
+            }
+        } else {
+            // non-wrapped rendering
+            render_text_colored(output[i], 10, y, fg, bg);
+
+            if (selection && selection->active) {
+                int startLine = selection->startLine;
+                int endLine = selection->endLine;
+                int startChar = selection->startChar;
+                int endChar = selection->endChar;
+
+                if (startLine > endLine || (startLine == endLine && startChar > endChar)) {
+                    int tmpLine = startLine, tmpChar = startChar;
+                    startLine = endLine; startChar = endChar;
+                    endLine = tmpLine; endChar = tmpChar;
                 }
-                else if (i == selection->endLine)
-                {
-                    // Last line of multi-line selection
-                    selStart = 0;
-                    selEnd = selection->endChar;
-                }
-                else
-                {
-                    // Middle line of multi-line selection
-                    selStart = 0;
-                    selEnd = (int)strlen(output[i]);
+
+                if (i >= startLine && i <= endLine) {
+                    int selStart = (i == startLine) ? startChar : 0;
+                    int selEnd = (i == endLine) ? endChar : (int)strlen(output[i]);
+                    
+                    int lineLen = (int)strlen(output[i]);
+                    if (selStart > lineLen) selStart = lineLen;
+                    if (selEnd > lineLen) selEnd = lineLen;
+
+                    if (selStart < selEnd) {
+                        int highlightX = 10 + selStart * charWidth;
+                        int highlightWidth = (selEnd - selStart) * charWidth;
+                        render_selection_highlight(highlightX, y, highlightWidth, FONT_SIZE);
+                    }
                 }
             }
+            y += FONT_SIZE + 4;
+            displayLineCount++;
+        }
+    }
 
-            if (lineSelected && selStart < selEnd)
-            {
-                // Render selection highlight
-                int highlightX = 10 + selStart * charWidth;
-                int highlightWidth = (selEnd - selStart) * charWidth;
-                render_selection_highlight(highlightX, y, highlightWidth, FONT_SIZE);
+    // Render Input Line
+    if (prompt)
+        render_text_colored(prompt, 10, y, (SDL_Color){255, 255, 255, 255}, (SDL_Color){0, 0, 0, 255});
+
+    if (inputBuffer) {
+        render_text_colored(inputBuffer, 80, y, (SDL_Color){255, 255, 255, 255}, (SDL_Color){0, 0, 0, 255});
+        
+        if (selection && selection->active) {
+            int startLine = selection->startLine;
+            int endLine = selection->endLine;
+            int startChar = selection->startChar;
+            int endChar = selection->endChar;
+
+            if (startLine > endLine || (startLine == endLine && startChar > endChar)) {
+                int tmpLine = startLine, tmpChar = startChar;
+                startLine = endLine; startChar = endChar;
+                endLine = tmpLine; endChar = tmpChar;
+            }
+
+            if (lineCount >= startLine && lineCount <= endLine) {
+                int selStart = (lineCount == startLine) ? startChar : 0;
+                int selEnd = (lineCount == endLine) ? endChar : (int)strlen(inputBuffer);
+                int lineLen = (int)strlen(inputBuffer);
+                if (selStart > lineLen) selStart = lineLen;
+                if (selEnd > lineLen) selEnd = lineLen;
+
+                 if (selStart < selEnd) {
+                    int highlightX = 80 + selStart * charWidth;
+                    int highlightWidth = (selEnd - selStart) * charWidth;
+                    render_selection_highlight(highlightX, y, highlightWidth, FONT_SIZE);
+                }
             }
         }
-
-        render_text_colored(output[i], 10, y, fg, bg);
-        y += FONT_SIZE + 4;
     }
 
-    // Render prompt and input
-    if (prompt)
-    {
-        render_text_colored(prompt, 10, y, (SDL_Color){255, 255, 255, 255}, (SDL_Color){0, 0, 0, 255});
-    }
-
-    if (inputBuffer)
-    {
-        render_text_colored(inputBuffer, 80, y, (SDL_Color){255, 255, 255, 255}, (SDL_Color){0, 0, 0, 255});
-    }
-
-    // Render cursor at cursor position
+    // Cursor
     int cursorX = 80 + cursorPos * charWidth;
     render_cursor(cursorX, y);
 
     SDL_RenderPresent(gRenderer);
 }
 
-void gui_handle_mouse_event(SDL_Event *e, char output[][INPUT_BUFFER_SIZE], int lineCount, TextSelection *selection)
+void gui_handle_mouse_event(SDL_Event *e, char output[][INPUT_BUFFER_SIZE], const char *inputBuffer, int lineCount, TextSelection *selection)
 {
     if (!selection) return;
 
     int charWidth = gui_get_char_width();
     int lineHeight = FONT_SIZE + 4;
+    int inputLineY = 10 + lineCount * lineHeight;
+
+    // Update cursor appearance
+    if (e->type == SDL_MOUSEMOTION)
+    {
+        gui_update_cursor(e->motion.x, e->motion.y, lineCount);
+    }
+    
+    int mouseX, mouseY;
+    if (e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
+        mouseX = e->button.x;
+        mouseY = e->button.y;
+    } else if (e->type == SDL_MOUSEMOTION) {
+        mouseX = e->motion.x;
+        mouseY = e->motion.y;
+    } else {
+        return;
+    }
+
+    int clickedLine, clickedChar;
+    if (mouseY >= inputLineY && mouseY < inputLineY + lineHeight) {
+        clickedLine = lineCount;
+        clickedChar = (mouseX - 80) / charWidth;
+    } else {
+        clickedLine = (mouseY - 10) / lineHeight;
+        clickedChar = (mouseX - 10) / charWidth;
+    }
+
+    int lineLen = 0;
+    if (clickedLine == lineCount) {
+        lineLen = (int)strlen(inputBuffer);
+    } else if (clickedLine >= 0 && clickedLine < lineCount) {
+        lineLen = (int)strlen(output[clickedLine]);
+    }
+    
+    if (clickedChar < 0) clickedChar = 0;
+    if (clickedChar > lineLen) clickedChar = lineLen;
 
     if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT)
     {
-        int clickedLine = (e->button.y - 10) / lineHeight;
-        int clickedChar = (e->button.x - 10) / charWidth;
-
-        if (clickedLine >= 0 && clickedLine < lineCount)
-        {
-            // Clamp character position to line length
-            int lineLen = (int)strlen(output[clickedLine]);
-            if (clickedChar < 0) clickedChar = 0;
-            if (clickedChar > lineLen) clickedChar = lineLen;
-
-            selection->active = true;
+        if (clickedLine >= 0 && clickedLine <= lineCount) {
+            selection->active = 1; 
             selection->startLine = clickedLine;
             selection->startChar = clickedChar;
             selection->endLine = clickedLine;
             selection->endChar = clickedChar;
-        }
-    }
-    else if (e->type == SDL_MOUSEBUTTONUP && e->button.button == SDL_BUTTON_LEFT)
-    {
-        if (selection->active)
-        {
-            int currentLine = (e->button.y - 10) / lineHeight;
-            int currentChar = (e->button.x - 10) / charWidth;
-
-            if (currentLine >= 0 && currentLine < lineCount)
-            {
-                // Clamp character position to line length
-                int lineLen = (int)strlen(output[currentLine]);
-                if (currentChar < 0) currentChar = 0;
-                if (currentChar > lineLen) currentChar = lineLen;
-
-                selection->endLine = currentLine;
-                selection->endChar = currentChar;
-            }
-            
-            // If start and end are the same, deactivate selection
-            if (selection->startLine == selection->endLine && 
-                selection->startChar == selection->endChar)
-            {
-                selection->active = false;
-            }
+        } else {
+            selection->active = 0;
         }
     }
     else if (e->type == SDL_MOUSEMOTION && (e->motion.state & SDL_BUTTON_LMASK))
     {
-        if (selection->active)
-        {
-            int currentLine = (e->motion.y - 10) / lineHeight;
-            int currentChar = (e->motion.x - 10) / charWidth;
-
-            if (currentLine >= 0 && currentLine < lineCount)
-            {
-                // Clamp character position to line length
-                int lineLen = (int)strlen(output[currentLine]);
-                if (currentChar < 0) currentChar = 0;
-                if (currentChar > lineLen) currentChar = lineLen;
-
-                selection->endLine = currentLine;
-                selection->endChar = currentChar;
-            }
+        if (selection->active) { 
+             if (clickedLine >= 0 && clickedLine <= lineCount) {
+                selection->endLine = clickedLine;
+                selection->endChar = clickedChar;
+             }
         }
     }
 }
 
-void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], int lineCount, TextSelection *selection, char *buffer, int bufferSize)
+void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], const char *inputBuffer, int lineCount, TextSelection *selection, char *buffer, int bufferSize)
 {
     if (!selection || !selection->active || !buffer || bufferSize <= 0)
     {
@@ -246,7 +423,6 @@ void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], int lineCount, Text
     buffer[0] = '\0';
     int pos = 0;
 
-    // Ensure proper order (start <= end)
     int startLine = selection->startLine;
     int startChar = selection->startChar;
     int endLine = selection->endLine;
@@ -254,7 +430,6 @@ void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], int lineCount, Text
 
     if (startLine > endLine || (startLine == endLine && startChar > endChar))
     {
-        // Swap if selection is backwards
         int tempLine = startLine;
         int tempChar = startChar;
         startLine = endLine;
@@ -263,24 +438,29 @@ void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], int lineCount, Text
         endChar = tempChar;
     }
 
-    for (int i = startLine; i <= endLine && i < lineCount; i++)
+    for (int i = startLine; i <= endLine && i <= lineCount; i++)
     {
+        const char *lineText = (i == lineCount) ? inputBuffer : output[i];
         int copyStartChar = (i == startLine) ? startChar : 0;
-        int copyEndChar = (i == endLine) ? endChar : (int)strlen(output[i]);
+        int copyEndChar = (i == endLine) ? endChar : (int)strlen(lineText);
 
+        int lineLen = (int)strlen(lineText);
+        if (copyStartChar > lineLen) copyStartChar = lineLen;
+        if (copyEndChar > lineLen) copyEndChar = lineLen;
+        
         if (copyStartChar < copyEndChar)
         {
             int copyLen = copyEndChar - copyStartChar;
             if (pos + copyLen < bufferSize - 1)
             {
-                strncpy(buffer + pos, output[i] + copyStartChar, copyLen);
+                strncpy(buffer + pos, lineText + copyStartChar, copyLen);
                 pos += copyLen;
             }
         }
 
         if (i < endLine && pos < bufferSize - 2)
         {
-            buffer[pos++] = '\n'; // Add newline between lines
+            buffer[pos++] = '\n';
         }
     }
 
@@ -289,5 +469,14 @@ void gui_get_selected_text(char output[][INPUT_BUFFER_SIZE], int lineCount, Text
 
 void gui_cleanup()
 {
-    // Cleanup if needed
+    if (arrowCursor)
+    {
+        SDL_FreeCursor(arrowCursor);
+        arrowCursor = NULL;
+    }
+    if (ibeamCursor)
+    {
+        SDL_FreeCursor(ibeamCursor);
+        ibeamCursor = NULL;
+    }
 }
