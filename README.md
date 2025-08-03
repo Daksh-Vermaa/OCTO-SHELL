@@ -2,10 +2,10 @@
 
 A modern, lightweight terminal emulator built with SDL2 that brings retro computing vibes to your desktop! Features a sleek interface with customizable fonts, text selection, clipboard integration, and dynamic word wrapping.
 
-![Terminal Emulator](https://img.shields.io/badge/Platform-Windows-blue?style=flat-square)
-![Language](https://img.shields.io/badge/Language-C-00599C?style=flat-square)
-![Graphics](https://img.shields.io/badge/Graphics-SDL2-green?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
+[C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
+![SDL2](https://img.shields.io/badge/SDL2-2.28.5-blue)
+![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
+![License](https://img.shields.io/badge/License-GPL-green)
 
 ## ✨ Features
 
@@ -47,7 +47,7 @@ A modern, lightweight terminal emulator built with SDL2 that brings retro comput
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Daksh-Vermaa/OCTO-SHELL.git
-   cd octo-shell-emulator
+   cd Octo-Shell
    ```
 
 2. **Install SDL2 Dependencies**
@@ -70,7 +70,7 @@ A modern, lightweight terminal emulator built with SDL2 that brings retro comput
 
 5. **Run the Emulator**
    ```bash
-   ./octo-shell.exe
+   ./shell.exe
    ```
 
 ## 🎮 Usage
@@ -80,8 +80,8 @@ A modern, lightweight terminal emulator built with SDL2 that brings retro comput
 >> help                    # Show all commands
 >> echo Hello World!       # Display text
 >> wordwrap on             # Enable word wrapping
->> clear                  # Clear screen
->> exit                   # Close application
+>> clear                   # Clear screen
+>> exit                    # Close application
 ```
 
 ### Keyboard Shortcuts
@@ -119,8 +119,10 @@ Edit `config.h` to customize your experience:
 
 📁 Octo-Shell/
 ├── 📁 assets/                  # Fonts or other assets
-│   └── FiraCode-Light.ttf
-│
+│   ├── FiraCode-Light.ttf
+│   ├── FiraCdoe-Bold.ttf
+|   └── Typewriter.ttf
+|
 ├── 📁 include/                 # Header files
 │   ├── config.h                # Constants 
 │   ├── gui.h                   # GUI-related declarations
@@ -196,17 +198,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-Having issues? We're here to help!
+Having issues? 
 
-- 🐛 **Bug Reports**: [Open an issue](https://github.com/Daksh-Vermaa/OCTO-SHELL/issues)
-- 💡 **Feature Requests**: [Start a discussion](https://github.com/Daksh-Vermaa/OCTO-SHELL/discussions)
-- 📧 **Direct Contact**: your.email@example.com
+- 📧 **Direct Contact**: dakshr117@gmail.com
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by [Daksh Verma]**
+**Made with ❤️ by [<a href="https://github.com/Daksh-Vermaa" target="_blank">Daksh Verma </a>⚡]**
 
 *If you found this project helpful, please consider giving it a ⭐!*
 
