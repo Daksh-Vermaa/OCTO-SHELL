@@ -74,8 +74,8 @@ void render_centered_title(const char *title, int y)
         return;
 
     // Create colored text surface
-    SDL_Color titleColor = {0, 255, 255, 255}; // Cyan color for title
-    SDL_Color bgColor = {0, 0, 0, 255};        // Black background
+    SDL_Color titleColor = {255, 64, 64, 255}; 
+    SDL_Color bgColor = {0, 0, 0, 255};
     
     SDL_Surface *surface = TTF_RenderText_Shaded(fontToUse, title, titleColor, bgColor);
     if (!surface)

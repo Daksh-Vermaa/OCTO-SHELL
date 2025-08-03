@@ -10,8 +10,8 @@
 #define FONT_SIZE 18
 
 // Title font settings
-#define TITLE_FONT_PATH "assets/FiraCode-Bold.ttf"  // Can be different from main font
-#define TITLE_FONT_SIZE 24                          // Larger size for title
+#define TITLE_FONT_PATH "assets/FiraCode-Bold.ttf"
+#define TITLE_FONT_SIZE 24
 #define TITLE_TEXT "~~~ OCTO-SHELL Emulator v2.0 ~~~"
 
 // Buffer settings
