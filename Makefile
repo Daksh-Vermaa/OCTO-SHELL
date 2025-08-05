@@ -20,4 +20,3 @@ $(TARGET): $(SRC)
 
 clean:
 	rm -f shell.exe
-
