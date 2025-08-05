@@ -7,6 +7,10 @@ A modern, lightweight terminal emulator built with SDL2 that brings retro comput
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/License-GPL-green)
 
+## 📷 Preview
+![OCTO-Shell Emulator v2.0](https://raw.githubusercontent.com/Daksh-Vermaa/OCTO-SHELL/main/assets/preview/preview.mp4)
+
+
 ## ✨ Features
 
 ### 🖥️ **Modern Terminal Experience**
@@ -78,10 +82,11 @@ A modern, lightweight terminal emulator built with SDL2 that brings retro comput
 ### Basic Commands
 ```bash
 >> help                    # Show all commands
->> echo Hello World!       # Display text
->> wordwrap on             # Enable word wrapping
+>> echo <text>             # Display text
+>> wordwrap on/off         # Enable word wrapping
 >> clear                   # Clear screen
 >> exit                    # Close application
+>> shortcuts               # show all shortcuts
 ```
 
 ### Keyboard Shortcuts
@@ -119,9 +124,12 @@ Edit `config.h` to customize your experience:
 
 📁 Octo-Shell/
 ├── 📁 assets/                  # Fonts or other assets
-│   ├── FiraCode-Light.ttf
-│   ├── FiraCdoe-Bold.ttf
-|   └── Typewriter.ttf
+│   ├── 📁 Preview/
+│       ├── preview.mp4         # Video
+│   ├── FiraCode-Light.ttf      # Font
+│   ├── FiraCdoe-Bold.ttf       
+│   ├── Typewriter.ttf          
+|   └── Icon.png                # Icon 
 |
 ├── 📁 include/                 # Header files
 │   ├── config.h                # Constants 
@@ -136,7 +144,8 @@ Edit `config.h` to customize your experience:
 │   └── shell.c                 # Shell logic 
 │
 ├── 🛠️  Makefile                # Build instructions using make
-├── 📄 SDL2_ttf.dll             # SDL2_ttf runtime DLL
+├── 📄 SDL2_image.dll           # SDL2 image runtime DLL
+├── 📄 SDL2_ttf.dll             # SDL2 text runtime DLL
 ├── 📄 SDL2.dll                 # SDL2 runtime DLL
 
 ```
