@@ -8,7 +8,7 @@ A modern, lightweight terminal emulator built with SDL2 that brings retro comput
 ![License](https://img.shields.io/badge/License-GPL-green)
 
 ## 📷 Preview
-![OCTO-Shell Emulator v2.0](assets/preview/preview.mp4)
+![OCTO-Shell Emulator v2.0](assets/preview/preview.gif)
 
 
 ## ✨ Features
