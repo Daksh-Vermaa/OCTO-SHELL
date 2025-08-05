@@ -1,5 +1,6 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <SDL_image.h>
 
 #include <windows.h>
 #include <stdio.h>
@@ -15,7 +16,6 @@ int wordWrapEnabled = 0; // 0 = false, 1 = true
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-    // Allocate console for debugging (optional - can be removed in release)
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
@@ -36,7 +36,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // Create main window
-    SDL_Window *window = SDL_CreateWindow("OCTO-Shell Emulator - Word Wrap Edition",
+    SDL_Window *window = SDL_CreateWindow(" OCTO-SHELL Emulator",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
                                           WINDOW_WIDTH,
@@ -48,6 +48,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         TTF_Quit();
         SDL_Quit();
         return 1;
+    }
+
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        printf("SDL_image init failed: %s\n", IMG_GetError());
+    }
+
+    // ✅ Load icon
+    SDL_Surface* icon = IMG_Load("assets/icon.png");
+    if (!icon) {
+        printf("Failed to load window icon: %s\n", IMG_GetError());
+    } else {
+        SDL_SetWindowIcon(window, icon);
+        SDL_FreeSurface(icon);
     }
 
     // Create renderer with hardware acceleration

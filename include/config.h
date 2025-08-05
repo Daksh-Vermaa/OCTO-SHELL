@@ -12,7 +12,7 @@
 // Title font settings
 #define TITLE_FONT_PATH "assets/FiraCode-Bold.ttf"
 #define TITLE_FONT_SIZE 24
-#define TITLE_TEXT "~~~ OCTO-SHELL Emulator v2.0 ~~~"
+#define TITLE_TEXT "OCTO-SHELL Emulator "
 
 // Buffer settings
 #define MAX_LINES 100
@@ -34,4 +34,4 @@ typedef struct {
 // Word wrap state
 extern int wordWrapEnabled;
 
-#endif // CONFIG_H
+#endif 

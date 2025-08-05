@@ -68,7 +68,6 @@ void render_centered_title(const char *title, int y)
     if (!title || strlen(title) == 0 || !gRenderer)
         return;
 
-    // Use title font if available, otherwise use regular font
     TTF_Font *fontToUse = gTitleFont ? gTitleFont : gFont;
     if (!fontToUse)
         return;
@@ -88,7 +87,6 @@ void render_centered_title(const char *title, int y)
         return;
     }
 
-    // Calculate centered position
     int textWidth = surface->w;
     int textHeight = surface->h;
     int centerX = (WINDOW_WIDTH - textWidth) / 2;
