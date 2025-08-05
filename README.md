@@ -125,7 +125,7 @@ Edit `config.h` to customize your experience:
 📁 Octo-Shell/
 ├── 📁 assets/                  # Fonts or other assets
 │   ├── 📁 Preview/
-│       ├── preview.mp4         # Video
+│       ├── preview.gif         # Video
 │   ├── FiraCode-Light.ttf      # Font
 │   ├── FiraCdoe-Bold.ttf       
 │   ├── Typewriter.ttf          
