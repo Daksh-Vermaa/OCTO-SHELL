@@ -21,6 +21,9 @@ void render_selection_highlight(int x, int y, int width, int height);
 void render_cursor(int x, int y);
 int gui_get_char_width(void);
 
+// Window dimension functions
+void gui_get_window_size(int *width, int *height);
+
 // Word wrap functions
 void wrap_text(const char *text, char wrapped[][INPUT_BUFFER_SIZE], int *wrappedLineCount, int maxWidth);
 int get_text_width_in_chars(void);

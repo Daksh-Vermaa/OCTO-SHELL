@@ -16,9 +16,13 @@ int wordWrapEnabled = 0; // 0 = false, 1 = true
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
+    // Allocate console for debugging
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
+    freopen("CONIN$", "r", stdin);
+    
+    printf("Starting OCTO-Shell Emulator...\n");
     
     // Initialize SDL video subsystem
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -35,8 +39,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 1;
     }
 
+    // Initialize SDL_image
+    int imgFlags = IMG_INIT_PNG;
+    if (!(IMG_Init(imgFlags) & imgFlags)) {
+        printf("SDL_image init failed: %s\n", IMG_GetError());
+        // Continue without image support
+    }
+
     // Create main window
-    SDL_Window *window = SDL_CreateWindow(" OCTO-SHELL Emulator",
+    SDL_Window *window = SDL_CreateWindow("OCTO-SHELL Emulator",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
                                           WINDOW_WIDTH,
@@ -45,22 +56,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (!window)
     {
         printf("Window creation failed: %s\n", SDL_GetError());
+        IMG_Quit();
         TTF_Quit();
         SDL_Quit();
         return 1;
     }
 
-    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        printf("SDL_image init failed: %s\n", IMG_GetError());
-    }
-
-    // ✅ Load icon
+    // Load and set window icon
     SDL_Surface* icon = IMG_Load("assets/icon.png");
     if (!icon) {
         printf("Failed to load window icon: %s\n", IMG_GetError());
-    } else {
+        // Try alternative path
+        icon = IMG_Load("icon.png");
+        if (!icon) {
+            printf("Window icon not found, continuing without icon.\n");
+        }
+    }
+    if (icon) {
         SDL_SetWindowIcon(window, icon);
         SDL_FreeSurface(icon);
+        printf("Window icon loaded successfully.\n");
     }
 
     // Create renderer with hardware acceleration
@@ -69,98 +84,68 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     {
         printf("Renderer creation failed: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
+        IMG_Quit();
         TTF_Quit();
         SDL_Quit();
         return 1;
     }
 
-    // Load main font with fallback options
-    TTF_Font *font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
-    if (!font)
-    {
-        printf("Primary font loading failed: %s\n", TTF_GetError());
-        printf("Trying fallback fonts...\n");
-
-        // Try relative path
-        font = TTF_OpenFont("assets/FiraCode-Light.ttf", FONT_SIZE);
-        if (!font)
-        {
-            // Try current directory
-            font = TTF_OpenFont("FiraCode-Light.ttf", FONT_SIZE);
-            if (!font)
-            {
-                // Try system default monospace font
-                font = TTF_OpenFont("C:/Windows/Fonts/consola.ttf", FONT_SIZE);
-                if (!font)
-                {
-                    printf("Could not load any suitable font. Please ensure FiraCode-Light.ttf is available.\n");
-                    SDL_DestroyRenderer(renderer);
-                    SDL_DestroyWindow(window);
-                    TTF_Quit();
-                    SDL_Quit();
-                    return 1;
-                }
-                else
-                {
-                    printf("Using system Consolas font as fallback.\n");
-                }
-            }
-            else
-            {
-                printf("Loaded font from current directory.\n");
-            }
-        }
-        else
-        {
-            printf("Loaded font from assets directory.\n");
+    // Load main font with comprehensive fallback system
+    TTF_Font *font = NULL;
+    const char* fontPaths[] = {
+        FONT_PATH,
+        "assets/Typewriter.ttf",
+        "Typewriter.ttf",
+        "assets/FiraCode-Light.ttf",
+        "FiraCode-Light.ttf",
+        "C:/Windows/Fonts/consola.ttf",
+        "C:/Windows/Fonts/cour.ttf",
+        NULL
+    };
+    
+    for (int i = 0; fontPaths[i] != NULL; i++) {
+        font = TTF_OpenFont(fontPaths[i], FONT_SIZE);
+        if (font) {
+            printf("Successfully loaded font: %s\n", fontPaths[i]);
+            break;
+        } else {
+            printf("Failed to load font %s: %s\n", fontPaths[i], TTF_GetError());
         }
     }
-    else
-    {
-        printf("Successfully loaded primary font: %s\n", FONT_PATH);
+    
+    if (!font) {
+        printf("Critical error: Could not load any suitable font!\n");
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        TTF_Quit();
+        SDL_Quit();
+        return 1;
     }
 
-    // Load title font (can be different from main font)
-    TTF_Font *titleFont = TTF_OpenFont(TITLE_FONT_PATH, TITLE_FONT_SIZE);
-    if (!titleFont)
-    {
-        printf("Title font loading failed: %s\n", TTF_GetError());
-        printf("Trying title font fallbacks...\n");
-
-        // Try bold variant in assets
-        titleFont = TTF_OpenFont("assets/FiraCode-Bold.ttf", TITLE_FONT_SIZE);
-        if (!titleFont)
-        {
-            // Try regular font but larger
-            titleFont = TTF_OpenFont(FONT_PATH, TITLE_FONT_SIZE);
-            if (!titleFont)
-            {
-                // Try system bold font
-                titleFont = TTF_OpenFont("C:/Windows/Fonts/consolab.ttf", TITLE_FONT_SIZE);
-                if (!titleFont)
-                {
-                    // Use main font as fallback for title
-                    titleFont = font;
-                    printf("Using main font for title.\n");
-                }
-                else
-                {
-                    printf("Using system Consolas Bold for title.\n");
-                }
-            }
-            else
-            {
-                printf("Using main font path with larger size for title.\n");
-            }
-        }
-        else
-        {
-            printf("Loaded title font from assets directory.\n");
+    // Load title font with fallbacks
+    TTF_Font *titleFont = NULL;
+    const char* titleFontPaths[] = {
+        TITLE_FONT_PATH,
+        "assets/FiraCode-Bold.ttf",
+        "FiraCode-Bold.ttf",
+        "C:/Windows/Fonts/consolab.ttf",
+        "C:/Windows/Fonts/courbd.ttf",
+        NULL
+    };
+    
+    for (int i = 0; titleFontPaths[i] != NULL; i++) {
+        titleFont = TTF_OpenFont(titleFontPaths[i], TITLE_FONT_SIZE);
+        if (titleFont) {
+            printf("Successfully loaded title font: %s\n", titleFontPaths[i]);
+            break;
         }
     }
-    else
-    {
-        printf("Successfully loaded title font: %s\n", TITLE_FONT_PATH);
+    
+    if (!titleFont) {
+        // Use main font as fallback for title
+        titleFont = font;
+        printf("Using main font for title.\n");
     }
 
     // Initialize GUI subsystem
@@ -168,34 +153,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     gui_set_title_font(titleFont);
 
     // Initialize application state
-    char inputBuffer[INPUT_BUFFER_SIZE] = "";
+    char inputBuffer[INPUT_BUFFER_SIZE];
     char output[MAX_LINES][INPUT_BUFFER_SIZE];
     int lineCount = 0;
     int cursorPos = 0;
     
-    // Initialize text selection structure
-    TextSelection selection = {0};
-    selection.startLine = 0;
-    selection.startChar = 0;
-    selection.endLine = 0;
-    selection.endChar = 0;
-    selection.active = 0;
-
-    // Clear output buffer
-    for (int i = 0; i < MAX_LINES; i++)
-    {
-        output[i][0] = '\0';
+    // Initialize buffers
+    memset(inputBuffer, 0, INPUT_BUFFER_SIZE);
+    for (int i = 0; i < MAX_LINES; i++) {
+        memset(output[i], 0, INPUT_BUFFER_SIZE);
     }
+    
+    // Initialize text selection structure
+    TextSelection selection;
+    memset(&selection, 0, sizeof(TextSelection));
 
-    // Display welcome messages (no longer showing title here as it's rendered in GUI)
-    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
-    lineCount++;
-    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
-    lineCount++;
-    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'shortcuts' for available shortcuts.");
-    lineCount++;
-    snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
-    lineCount++;
+    // Display welcome messages
+    if (lineCount < MAX_LINES) {
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
+        lineCount++;
+    }
+    if (lineCount < MAX_LINES) {
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Welcome to OCTO-SHELL Emulator!");
+        lineCount++;
+    }
+    if (lineCount < MAX_LINES) {
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
+        lineCount++;
+    }
+    if (lineCount < MAX_LINES) {
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'shortcuts' for keyboard shortcuts.");
+        lineCount++;
+    }
+    if (lineCount < MAX_LINES) {
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
+        lineCount++;
+    }
 
     const char *prompt = ">> ";
     bool running = true;
@@ -204,9 +197,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Enable text input for keyboard handling
     SDL_StartTextInput();
 
-    printf("OCTO-Shell Emulator started successfully.\n");
+    printf("OCTO-Shell Emulator initialized successfully.\n");
     printf("Window size: %dx%d\n", WINDOW_WIDTH, WINDOW_HEIGHT);
-    printf("Main font size: %d, Title font size: %d\n", FONT_SIZE, TITLE_FONT_SIZE);
+    printf("Font sizes - Main: %d, Title: %d\n", FONT_SIZE, TITLE_FONT_SIZE);
 
     // Main application loop
     while (running && !shell_should_exit())
@@ -214,43 +207,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // Process all pending events
         while (SDL_PollEvent(&e))
         {
-            // Handle window close event
-            if (e.type == SDL_QUIT)
+            switch (e.type)
             {
-                running = false;
-                break;
-            }
-
-            // Handle keyboard events
-            if (e.type == SDL_KEYDOWN || e.type == SDL_TEXTINPUT)
-            {
-                // Check for escape key to exit
-                if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)
-                {
+                case SDL_QUIT:
                     running = false;
                     break;
-                }
-                else
-                {
-                    // Pass keyboard events to input handler
-                    input_handle_event(&e, inputBuffer, output, &lineCount, &cursorPos, &selection);
-                }
-            }
-            
-            // Handle mouse events for text selection
-            if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP || e.type == SDL_MOUSEMOTION)
-            {
-                gui_handle_mouse_event(&e, output, inputBuffer, lineCount, &selection);
-            }
 
-            // Handle window resize events
-            if (e.type == SDL_WINDOWEVENT)
-            {
-                if (e.window.event == SDL_WINDOWEVENT_RESIZED)
-                {
-                    printf("Window resized to: %dx%d\n", e.window.data1, e.window.data2);
-                    // Note: Word wrap will automatically adjust to new window size
-                }
+                case SDL_KEYDOWN:
+                    if (e.key.keysym.sym == SDLK_ESCAPE) {
+                        running = false;
+                        break;
+                    }
+                    // Fall through to input handler
+                case SDL_TEXTINPUT:
+                    input_handle_event(&e, inputBuffer, output, &lineCount, &cursorPos, &selection);
+                    break;
+                
+                case SDL_MOUSEBUTTONDOWN:
+                case SDL_MOUSEBUTTONUP:
+                case SDL_MOUSEMOTION:
+                    gui_handle_mouse_event(&e, output, inputBuffer, lineCount, &selection);
+                    break;
+
+                case SDL_WINDOWEVENT:
+                    if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
+                        printf("Window resized to: %dx%d\n", e.window.data1, e.window.data2);
+                    }
+                    break;
             }
         }
 
@@ -263,40 +246,37 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     printf("Shutting down OCTO-Shell Emulator...\n");
 
-    // Cleanup resources in reverse order of creation
+    // Cleanup resources
     SDL_StopTextInput();
     gui_cleanup();
     
-    if (titleFont && titleFont != font)
-    {
+    if (titleFont && titleFont != font) {
         TTF_CloseFont(titleFont);
         printf("Title font resources freed.\n");
     }
     
-    if (font)
-    {
+    if (font) {
         TTF_CloseFont(font);
         printf("Main font resources freed.\n");
     }
     
-    if (renderer)
-    {
+    if (renderer) {
         SDL_DestroyRenderer(renderer);
         printf("Renderer destroyed.\n");
     }
     
-    if (window)
-    {
+    if (window) {
         SDL_DestroyWindow(window);
-        printf("Window destroyed successfully.\n");
+        printf("Window destroyed.\n");
     }
     
+    IMG_Quit();
     TTF_Quit();
     SDL_Quit();
     
     printf("OCTO-Shell Emulator terminated successfully.\n");
     
-    // Optional: Keep console window open for debugging
+    // Keep console window open in debug mode
     #ifdef _DEBUG
     printf("Press Enter to close console...\n");
     getchar();

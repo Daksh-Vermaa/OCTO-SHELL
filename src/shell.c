@@ -9,6 +9,9 @@
 #include "config.h"
 #include "shell.h"
 
+// External declaration for wordWrapEnabled (defined in main.c)
+extern int wordWrapEnabled;
+
 static bool shouldExit = false;
 static bool exitRequested = false;
 static Uint32 exitRequestTime = 0;
@@ -28,22 +31,39 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
         (*lineCount)--;
     }
 
-    if (strcmp(input, "clear") == 0)
+    // Trim whitespace from input
+    char trimmedInput[INPUT_BUFFER_SIZE];
+    const char *start = input;
+    while (*start && isspace((unsigned char)*start)) start++;
+    
+    const char *end = start + strlen(start) - 1;
+    while (end > start && isspace((unsigned char)*end)) end--;
+    
+    size_t len = end - start + 1;
+    if (len >= INPUT_BUFFER_SIZE) len = INPUT_BUFFER_SIZE - 1;
+    strncpy(trimmedInput, start, len);
+    trimmedInput[len] = '\0';
+
+    if (strcmp(trimmedInput, "clear") == 0)
     {
         *lineCount = 0;
         return;
     }
-    else if (strncmp(input, "echo ", 5) == 0)
+    else if (strncmp(trimmedInput, "echo ", 5) == 0)
     {
         if (*lineCount < MAX_LINES)
         {
-            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "%s", input + 5);
+            const char *echoText = trimmedInput + 5;
+            // Skip leading spaces after "echo"
+            while (*echoText == ' ') echoText++;
+            
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "%s", echoText);
             (*lineCount)++;
         }
     }
-    else if (strncmp(input, "wordwrap ", 9) == 0)
+    else if (strncmp(trimmedInput, "wordwrap ", 9) == 0)
     {
-        const char *value = input + 9;
+        const char *value = trimmedInput + 9;
         
         // Skip whitespace
         while (*value == ' ') value++;
@@ -75,7 +95,7 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
             }
         }
     }
-    else if (strcmp(input, "wordwrap") == 0)
+    else if (strcmp(trimmedInput, "wordwrap") == 0)
     {
         if (*lineCount < MAX_LINES)
         {
@@ -89,7 +109,20 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
             (*lineCount)++;
         }
     }
-    else if (strcmp(input, "help") == 0)
+    else if (strcmp(trimmedInput, "version") == 0)
+    {
+        if (*lineCount < MAX_LINES)
+        {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "OCTO-SHELL Emulator v1.0");
+            (*lineCount)++;
+        }
+        if (*lineCount < MAX_LINES)
+        {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Built with SDL2 and SDL_ttf");
+            (*lineCount)++;
+        }
+    }
+    else if (strcmp(trimmedInput, "help") == 0)
     {
         if (*lineCount < MAX_LINES)
         {
@@ -113,6 +146,11 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
         }
         if (*lineCount < MAX_LINES) 
         {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "  version - Show version information");
+            (*lineCount)++;
+        }
+        if (*lineCount < MAX_LINES) 
+        {
             snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "  help - Show this help");
             (*lineCount)++;
         }
@@ -127,7 +165,7 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
             (*lineCount)++;
         }
     }
-    else if (strcmp(input, "shortcuts") == 0) 
+    else if (strcmp(trimmedInput, "shortcuts") == 0) 
     {
         if (*lineCount < MAX_LINES)
         {
@@ -175,7 +213,7 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
             (*lineCount)++;
         }
     }
-    else if (strcmp(input, "exit") == 0 || strcmp(input, "quit") == 0)
+    else if (strcmp(trimmedInput, "exit") == 0 || strcmp(trimmedInput, "quit") == 0)
     {
         if (*lineCount < MAX_LINES)
         {
@@ -185,7 +223,7 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
         exitRequested = true;
         exitRequestTime = SDL_GetTicks();
     }
-    else if (strlen(input) == 0)
+    else if (strlen(trimmedInput) == 0)
     {
         // Empty command - do nothing
         return;
@@ -194,7 +232,12 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
     {
         if (*lineCount < MAX_LINES)
         {
-            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Unknown command: %s", input);
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Unknown command: %s", trimmedInput);
+            (*lineCount)++;
+        }
+        if (*lineCount < MAX_LINES)
+        {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
             (*lineCount)++;
         }
     }
