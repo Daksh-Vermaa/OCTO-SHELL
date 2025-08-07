@@ -177,12 +177,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Welcome to OCTO-SHELL Emulator!");
         lineCount++;
     }
-    if (lineCount < MAX_LINES) {
-        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
+        if (lineCount < MAX_LINES) {
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "");
         lineCount++;
     }
     if (lineCount < MAX_LINES) {
-        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'shortcuts' for keyboard shortcuts.");
+        snprintf(output[lineCount], INPUT_BUFFER_SIZE, "Type 'help' for available commands.");
         lineCount++;
     }
     if (lineCount < MAX_LINES) {
