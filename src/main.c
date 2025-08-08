@@ -14,6 +14,22 @@
 // Define the global word wrap variable
 int wordWrapEnabled = 0; // 0 = false, 1 = true
 
+// Define the global background configuration
+BackgroundConfig backgroundConfig = {
+    BACKGROUND_IMAGE_PATH,      // imagePath
+    BACKGROUND_OPACITY,         // opacity
+    BACKGROUND_SCALE_MODE,      // scaleMode
+    BACKGROUND_ENABLED,         // enabled
+    // BACKGROUND_BLUR_ENABLED,    // blurEnabled
+    // BACKGROUND_TINT_R,          // tintR
+    // BACKGROUND_TINT_G,          // tintG
+    // BACKGROUND_TINT_B,          // tintB
+    // BACKGROUND_OVERLAY_COLOR_R, // overlayR
+    // BACKGROUND_OVERLAY_COLOR_G, // overlayG
+    // BACKGROUND_OVERLAY_COLOR_B, // overlayB
+    // BACKGROUND_OVERLAY_OPACITY  // overlayOpacity
+};
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
     // Allocate console for debugging
@@ -40,10 +56,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // Initialize SDL_image
-    int imgFlags = IMG_INIT_PNG;
+    int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
     if (!(IMG_Init(imgFlags) & imgFlags)) {
         printf("SDL_image init failed: %s\n", IMG_GetError());
-        // Continue without image support
+        // Continue without full image support
+    } else {
+        printf("SDL_image initialized successfully with PNG and JPG support.\n");
     }
 
     // Create main window
@@ -152,6 +170,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     gui_init(renderer, font);
     gui_set_title_font(titleFont);
 
+    // Load background image if enabled
+    if (backgroundConfig.enabled) {
+        printf("Attempting to load background image: %s\n", backgroundConfig.imagePath);
+        
+        // Try multiple possible paths for the background image
+        const char* backgroundPaths[] = {
+            backgroundConfig.imagePath,
+            "assets/background.png",
+            "background.png",
+            "assets/background.jpg",
+            "background.jpg",
+            "assets/shell_bg.png",
+            "shell_bg.png",
+            NULL
+        };
+        
+        int backgroundLoaded = 0;
+        for (int i = 0; backgroundPaths[i] != NULL && !backgroundLoaded; i++) {
+            if (gui_set_background_image(backgroundPaths[i]) == 1) {
+                printf("Background image loaded from: %s\n", backgroundPaths[i]);
+                // Update the config with the successful path
+                strncpy(backgroundConfig.imagePath, backgroundPaths[i], sizeof(backgroundConfig.imagePath) - 1);
+                backgroundConfig.imagePath[sizeof(backgroundConfig.imagePath) - 1] = '\0';
+                backgroundLoaded = 1;
+            }
+        }
+        
+        if (!backgroundLoaded) {
+            printf("Warning: Could not load any background image. Running without background.\n");
+            backgroundConfig.enabled = 0;
+        }
+    } else {
+        printf("Background image disabled in configuration.\n");
+    }
+
     // Initialize application state
     char inputBuffer[INPUT_BUFFER_SIZE];
     char output[MAX_LINES][INPUT_BUFFER_SIZE];
@@ -200,6 +253,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     printf("OCTO-Shell Emulator initialized successfully.\n");
     printf("Window size: %dx%d\n", WINDOW_WIDTH, WINDOW_HEIGHT);
     printf("Font sizes - Main: %d, Title: %d\n", FONT_SIZE, TITLE_FONT_SIZE);
+    printf("Background enabled: %s\n", backgroundConfig.enabled ? "Yes" : "No");
+    if (backgroundConfig.enabled) {
+        printf("Background settings - Opacity: %d, Scale Mode: %d\n", 
+               backgroundConfig.opacity, backgroundConfig.scaleMode);
+    }
 
     // Main application loop
     while (running && !shell_should_exit())
@@ -281,6 +339,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     printf("Press Enter to close console...\n");
     getchar();
     #endif
+
 
     return 0;
 }

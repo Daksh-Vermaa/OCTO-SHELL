@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "shell.h"
+#include "gui.h"
 
 // External declaration for wordWrapEnabled (defined in main.c)
 extern int wordWrapEnabled;
@@ -113,7 +114,7 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
     {
         if (*lineCount < MAX_LINES)
         {
-            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "OCTO-SHELL Emulator v1.0");
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "OCTO-SHELL Emulator v2.0");
             (*lineCount)++;
         }
         if (*lineCount < MAX_LINES)

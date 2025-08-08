@@ -1,10 +1,13 @@
-#include "config.h"
-#include "gui.h"
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
+
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <SDL_image.h>
 #include <ctype.h>
+#include "config.h"
+#include "gui.h"
 
 static SDL_Renderer *gRenderer = NULL;
 static TTF_Font *gFont = NULL;
@@ -19,8 +22,54 @@ static SDL_Cursor *arrowCursor = NULL;
 static SDL_Cursor *ibeamCursor = NULL;
 static bool isIbeamCursorActive = false;
 
+static SDL_Texture *gBackgroundTexture = NULL;
+static float gBackgroundOpacity = 1.0f;
+
 // Word wrap global variable
 extern int wordWrapEnabled; 
+
+int gui_set_background_image(const char *imagePath)
+{
+    if (!gRenderer || !imagePath) return 0;
+    
+    // Clean up existing background texture
+    if (gBackgroundTexture) {
+        SDL_DestroyTexture(gBackgroundTexture);
+        gBackgroundTexture = NULL;
+    }
+    
+    // Load new background image using SDL_image for better format support
+    SDL_Surface *surface = IMG_Load(imagePath);
+    if (!surface) {
+        printf("Warning: Could not load background image: %s\n", IMG_GetError());
+        return 0;
+    }
+    
+    gBackgroundTexture = SDL_CreateTextureFromSurface(gRenderer, surface);
+    SDL_FreeSurface(surface);
+    
+    if (!gBackgroundTexture) {
+        printf("Warning: Could not create background texture: %s\n", SDL_GetError());
+        return 0;
+    }
+    
+    return 1; // Success
+}
+
+void gui_set_background_opacity(float opacity)
+{
+    if (opacity < 0.0f) opacity = 0.0f;
+    if (opacity > 1.0f) opacity = 1.0f;
+    gBackgroundOpacity = opacity;
+}
+
+void gui_cleanup_background(void)
+{
+    if (gBackgroundTexture) {
+        SDL_DestroyTexture(gBackgroundTexture);
+        gBackgroundTexture = NULL;
+    }
+}
 
 void gui_init(SDL_Renderer *renderer, TTF_Font *font)
 {
@@ -279,7 +328,21 @@ void gui_render(const char *prompt, const char *inputBuffer, char output[][INPUT
     if (!gRenderer || !gFont) return;
 
     SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
-    SDL_RenderClear(gRenderer);
+SDL_RenderClear(gRenderer);
+
+// Render background image if available
+if (gBackgroundTexture) {
+    int windowWidth, windowHeight;
+    gui_get_window_size(&windowWidth, &windowHeight);
+    
+    SDL_Rect backgroundRect = {0, 0, windowWidth, windowHeight};
+    
+    // Set opacity
+    Uint8 alpha = (Uint8)(gBackgroundOpacity * 255);
+    SDL_SetTextureAlphaMod(gBackgroundTexture, alpha);
+    
+    SDL_RenderCopy(gRenderer, gBackgroundTexture, NULL, &backgroundRect);
+}
 
     Uint32 now = SDL_GetTicks();
     if (now - lastCursorToggle >= 500) {
@@ -603,4 +666,5 @@ void gui_cleanup()
         SDL_FreeCursor(ibeamCursor);
         ibeamCursor = NULL;
     }
+    gui_cleanup_background();
 }
