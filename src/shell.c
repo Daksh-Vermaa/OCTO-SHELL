@@ -110,6 +110,61 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
             (*lineCount)++;
         }
     }
+    else if (strncmp(trimmedInput, "background ", 11) == 0)
+    {
+        const char *args = trimmedInput + 11;
+        while (*args == ' ') args++; // Skip whitespace
+    
+        if (strncmp(args, "set ", 4) == 0) {
+        const char *imagePath = args + 4;
+        while (*imagePath == ' ') imagePath++; // Skip whitespace
+        
+        gui_set_background_image(imagePath);
+        if (*lineCount < MAX_LINES) {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Background image set to: %s", imagePath);
+            (*lineCount)++;
+        }
+    }
+    else if (strncmp(args, "opacity ", 8) == 0) {
+        const char *opacityStr = args + 8;
+        while (*opacityStr == ' ') opacityStr++; // Skip whitespace
+        
+        float opacity = atof(opacityStr);
+        gui_set_background_opacity(opacity);
+        if (*lineCount < MAX_LINES) {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Background opacity set to: %.2f", opacity);
+            (*lineCount)++;
+        }
+    }
+    else if (strcmp(args, "clear") == 0) {
+        gui_cleanup_background();
+        if (*lineCount < MAX_LINES) {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Background image cleared");
+            (*lineCount)++;
+             }
+        }
+    else {
+        if (*lineCount < MAX_LINES) {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Usage: background <set path|opacity value|clear>");
+            (*lineCount)++;
+            }
+        }
+    }
+    else if (strcmp(trimmedInput, "background") == 0)
+    {
+    if (*lineCount < MAX_LINES) {
+        snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "Background commands:");
+        (*lineCount)++;
+    }
+    if (*lineCount < MAX_LINES) {
+        snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "  background set <path> - Set background image");
+        (*lineCount)++;
+    }
+    if (*lineCount < MAX_LINES) {
+        snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "  background clear - Remove background");
+        (*lineCount)++;
+    }
+    }
     else if (strcmp(trimmedInput, "version") == 0)
     {
         if (*lineCount < MAX_LINES)
@@ -143,6 +198,11 @@ void shell_execute(const char *input, char output[][INPUT_BUFFER_SIZE], int *lin
         if (*lineCount < MAX_LINES) 
         {
             snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "  wordwrap <true/false> - Toggle word wrapping");
+            (*lineCount)++;
+        }
+        if (*lineCount < MAX_LINES) 
+        {
+            snprintf(output[*lineCount], INPUT_BUFFER_SIZE, "  background - Background image commands");
             (*lineCount)++;
         }
         if (*lineCount < MAX_LINES) 
