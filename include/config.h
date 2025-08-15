@@ -63,4 +63,15 @@ extern int wordWrapEnabled;
 // Background configuration global
 extern BackgroundConfig backgroundConfig;
 
+// Command color settings
+#define COMMAND_COLOR_R 0
+#define COMMAND_COLOR_G 255
+#define COMMAND_COLOR_B 0
+#define ERROR_COLOR_R 255
+#define ERROR_COLOR_G 0
+#define ERROR_COLOR_B 0
+#define NORMAL_COLOR_R 255
+#define NORMAL_COLOR_G 255
+#define NORMAL_COLOR_B 255
+
 #endif
