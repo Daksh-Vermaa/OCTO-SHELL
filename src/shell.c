@@ -94,8 +94,8 @@ void shell_execute(const char * input, char output[][INPUT_BUFFER_SIZE], int * l
       snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "Usage: wordwrap <true/false>");
       ( * lineCount) ++;
     }
-  } else if (strncmp(trimmedInput, "background ", 11) == 0) {
-    const char * args = trimmedInput + 11;
+  } else if (strncmp(trimmedInput, "background ", 11) == 0 || strncmp(trimmedInput, "bg ", 3) == 0) {
+    const char * args = trimmedInput + (strncmp(trimmedInput, "bg ", 3) == 0 ? 3 : 11);
     while ( * args == ' ') args++; // Skip whitespace
 
     if (strncmp(args, "set ", 4) == 0) {
@@ -129,17 +129,17 @@ void shell_execute(const char * input, char output[][INPUT_BUFFER_SIZE], int * l
         ( * lineCount) ++;
       }
     }
-  } else if (strcmp(trimmedInput, "background") == 0) {
+  }  else if (strcmp(trimmedInput, "background") == 0 || strcmp(trimmedInput, "bg") == 0) {
     if ( * lineCount < MAX_LINES) {
       snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "Background commands:");
       ( * lineCount) ++;
     }
     if ( * lineCount < MAX_LINES) {
-      snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "  background set <path> - Set background image");
+      snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "  bg set <path> - Set background image");
       ( * lineCount) ++;
     }
     if ( * lineCount < MAX_LINES) {
-      snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "  background clear - Remove background");
+      snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "  bg clear - Remove background");
       ( * lineCount) ++;
     }
   } else if (strcmp(trimmedInput, "version") == 0) {
@@ -169,7 +169,7 @@ void shell_execute(const char * input, char output[][INPUT_BUFFER_SIZE], int * l
       ( * lineCount) ++;
     }
     if ( * lineCount < MAX_LINES) {
-      snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "  background - Background image commands");
+      snprintf(output[ * lineCount], INPUT_BUFFER_SIZE, "  bg - Background image commands");
       ( * lineCount) ++;
     }
     if ( * lineCount < MAX_LINES) {

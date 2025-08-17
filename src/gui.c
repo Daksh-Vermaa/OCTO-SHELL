@@ -30,7 +30,7 @@ static SDL_Cursor * ibeamCursor = NULL;
 static bool isIbeamCursorActive = false;
 
 static SDL_Texture * gBackgroundTexture = NULL;
-static float gBackgroundOpacity = 1.0 f;
+static float gBackgroundOpacity = 1.0f;
 
 // Word wrap global variable
 extern int wordWrapEnabled;
@@ -63,8 +63,8 @@ int gui_set_background_image(const char * imagePath) {
 }
 
 void gui_set_background_opacity(float opacity) {
-  if (opacity < 0.0 f) opacity = 0.0 f;
-  if (opacity > 1.0 f) opacity = 1.0 f;
+  if (opacity < 0.0f) opacity = 0.0f;
+  if (opacity > 1.0f) opacity = 1.0f;
   gBackgroundOpacity = opacity;
 }
 
